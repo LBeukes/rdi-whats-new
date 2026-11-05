@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en-ZA">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>FLIR Camera Selector — Yellotec</title>
+<style>
+:root {
+  --yellow:#FFD100;
+  --orange:#FF6600;
+  --black:#000000;
+  --ink:#111111;
+  --charcoal:#3F3F3F;
+  --lt:#F2F2F2;
+  --soft:#6B6B6B;
+  --white:#fff;
+  --border:#E4E4E4;
+}
+* { box-sizing:border-box; }
+html,body { margin:0; padding:0; font-family:Arial, Helvetica, sans-serif; color:var(--charcoal); background:#fafafa; }
+body { min-height:100vh; }
+.topbar { height:8px; background:var(--yellow); }
+.header {
+  display:flex; align-items:center; gap:20px; flex-wrap:wrap;
+  padding:14px 24px 12px; background:var(--white); border-bottom:2px solid var(--black);
+}
+.header .mark {
+  width:56px; height:56px; border-radius:50%; background:var(--black); color:var(--yellow);
+  display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem;
+  border:3px solid var(--yellow); flex-shrink:0; letter-spacing:.02em;
+}
+.header .titles { flex:1; min-width:220px; }
+.header h1 { margin:0; color:var(--black); font-size:1.35rem; font-weight:700; line-height:1.2; }
+.header .sub { margin:4px 0 0; color:var(--soft); font-size:0.88rem; }
+.header .partner { text-align:right; color:var(--black); font-size:0.8rem; line-height:1.4; margin-left:auto; }
+.header .partner strong { display:block; font-weight:700; }
+.tabs {
+  display:flex; gap:0; max-width:1280px; margin:14px auto 0; padding:0 18px;
+  border-bottom:2px solid var(--black);
+}
+.tab {
+  flex:1; text-align:center; padding:12px 10px; font-weight:700; font-size:0.95rem;
+  background:var(--lt); color:var(--black); border:2px solid var(--black); border-bottom:none;
+  border-radius:8px 8px 0 0; cursor:pointer; margin-right:-2px; font-family:inherit;
+}
+.tab + .tab { margin-left:4px; }
+.tab:hover { background:#fff6c2; }
+.tab.is-on { background:var(--yellow); z-index:1; }
+.wrap {
+  max-width:1280px; margin:0 auto; padding:16px 18px 28px;
+  display:grid; grid-template-columns: 0.95fr 0.85fr 1.45fr; gap:16px;
+  align-items:start;
+}
+.panel {
+  background:var(--white); border:1px solid var(--border); border-radius:10px;
+  padding:14px 16px; box-shadow:0 1px 2px rgba(0,0,0,.04);
+  display:flex; flex-direction:column; min-height:0;
+}
+.panel h2 {
+  margin:0 0 10px; color:var(--black); font-size:0.95rem; letter-spacing:.02em;
+  display:flex; align-items:center; gap:8px;
+}
+.panel h2::before {
+  content:""; width:8px; height:8px; border-radius:50%; background:var(--yellow); flex-shrink:0;
+}
+.lens-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
+.lens-svg { width:100%; max-width:340px; height:auto; filter:drop-shadow(0 2px 6px rgba(0,0,0,.12)); }
+.seg { fill:#1a1a1a; stroke:#FFD100; stroke-width:1.2; cursor:pointer; transition: fill .18s, transform .18s; transform-origin: 160px 160px; }
+.seg:hover, .seg.is-hover { fill:#333; }
+.seg.is-selected { fill:#000; stroke:#FF6600; stroke-width:2.2; }
+.seg-label { fill:#FFD100; font-family:Arial,sans-serif; font-size:10.5px; font-weight:700; pointer-events:none; text-anchor:middle; }
+.seg-sub { fill:#cccccc; font-family:Arial,sans-serif; font-size:7.5px; pointer-events:none; text-anchor:middle; }
+.lens-ring { fill:none; stroke:#FFD100; stroke-width:6; }
+.lens-ring-outer { fill:none; stroke:#111111; stroke-width:10; }
+.lens-glass { fill:url(#glassGrad); opacity:.35; pointer-events:none; }
+.lens-hub { fill:#000000; stroke:#FFD100; stroke-width:2; cursor:pointer; }
+.lens-hub-i { fill:#FFD100; font-family:Arial,sans-serif; font-size:18px; font-weight:700; text-anchor:middle; dominant-baseline:central; pointer-events:none; }
+.lens-hint { font-size:0.72rem; color:var(--soft); text-align:center; margin:0 0 4px; }
+.filter-note { font-size:0.72rem; color:var(--orange); min-height:1em; margin:4px 0 0; text-align:center; }
+.clear-btn {
+  margin-top:4px; background:none; border:1px solid var(--border); border-radius:6px;
+  padding:5px 10px; font-size:0.72rem; cursor:pointer; color:var(--soft); align-self:center; font-family:inherit;
+}
+.clear-btn:hover { border-color:var(--black); color:var(--black); }
+.app-list { display:flex; flex-direction:column; gap:6px; max-height:560px; overflow:auto; padding-right:2px; }
+.app-btn {
+  text-align:left; padding:10px 12px; border:1.5px solid var(--border); border-radius:8px;
+  background:var(--white); color:var(--black); font-size:0.84rem; cursor:pointer; font-family:inherit;
+}
+.app-btn:hover { border-color:var(--black); background:#fffce8; }
+.app-btn.is-on { background:var(--yellow); border-color:var(--black); font-weight:700; }
+.results-head {
+  background:var(--black); color:var(--white); border-radius:8px; padding:12px 14px; margin-bottom:10px;
+}
+.results-head .count { font-size:1.0rem; font-weight:700; margin:0; color:var(--yellow); }
+.results-head .hint { margin:4px 0 0; font-size:0.78rem; opacity:.9; color:#eee; }
+.results-body { flex:1; overflow:auto; max-height:620px; padding-right:4px; }
+.card {
+  border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin:0 0 10px; background:#fff;
+}
+.card.best { border-left:4px solid var(--yellow); background:#fffceb; }
+.card.runner { border-left:4px solid var(--orange); }
+.card h3 { margin:0 0 4px; color:var(--black); font-size:0.95rem; }
+.card .tag { display:inline-block; font-size:0.68rem; font-weight:700; background:var(--black); color:var(--yellow); padding:2px 7px; border-radius:999px; margin-bottom:6px; }
+.card .why { margin:0 0 8px; font-size:0.82rem; line-height:1.4; }
+.card .meta { font-size:0.75rem; color:var(--soft); line-height:1.45; }
+.card a { color:var(--black); font-weight:700; text-decoration:underline; }
+.card a:hover { color:var(--orange); }
+.card.warn { border-color:var(--orange); background:#fff8f0; font-size:0.78rem; }
+table.spec { width:100%; border-collapse:collapse; font-size:0.78rem; margin:8px 0; }
+table.spec th, table.spec td { border:1px solid var(--border); padding:6px 8px; text-align:left; vertical-align:top; }
+table.spec th { background:var(--lt); color:var(--black); font-weight:700; }
+table.spec tr:nth-child(even) td { background:#fcfcfc; }
+.status-disc { color:var(--orange); font-weight:700; }
+.toolbar { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 10px; align-items:end; }
+.toolbar label { display:block; font-size:0.72rem; color:var(--soft); margin-bottom:3px; }
+.toolbar select, .toolbar input {
+  padding:8px 10px; font-size:0.88rem; font-family:inherit;
+  border:1.5px solid var(--black); border-radius:8px; color:var(--black); background:var(--white); min-width:140px;
+}
+.scene-tabs { display:flex; gap:6px; flex-wrap:wrap; margin:0 0 10px; }
+.scene-tabs button {
+  padding:7px 12px; border:1.5px solid var(--black); border-radius:999px; background:var(--white);
+  font-size:0.78rem; cursor:pointer; font-family:inherit; color:var(--black);
+}
+.scene-tabs button.is-on { background:var(--yellow); font-weight:700; }
+.cta {
+  display:block; text-align:center; margin-top:12px; padding:12px 16px;
+  background:var(--yellow); color:var(--black); font-weight:700; text-decoration:none;
+  border-radius:8px; border:2px solid var(--black); font-size:0.92rem;
+}
+.cta:hover { background:var(--orange); color:#fff; border-color:var(--orange); }
+.cta small { display:block; font-weight:400; font-size:0.72rem; margin-top:3px; opacity:.85; }
+.empty { color:var(--soft); font-size:0.85rem; padding:8px 0; }
+.footer {
+  max-width:1280px; margin:0 auto 20px; padding:0 18px;
+  font-size:0.7rem; color:var(--soft); display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
+}
+.bottombar { height:6px; background:var(--yellow); margin-top:8px; }
+.formula { font-family:Arial,sans-serif; background:var(--lt); border-radius:8px; padding:10px 12px; font-size:0.82rem; margin:0 0 10px; color:var(--black); }
+.formula code { background:#fff; border:1px solid var(--border); padding:1px 5px; border-radius:4px; }
+@media (max-width:1000px) {
+  .wrap { grid-template-columns:1fr; }
+  .lens-svg { max-width:280px; }
+  .header .partner { text-align:left; width:100%; margin-left:0; }
+  .results-body, .app-list { max-height:none; }
+  .tabs { flex-wrap:wrap; }
+  .tab { flex:1 1 45%; margin:0 0 4px; border-bottom:2px solid var(--black); }
+}
+</style>
+</head>
+<body>
+<div class="topbar"></div>
+<header class="header">
+  <div class="mark">FLIR</div>
+  <div class="titles">
+    <h1>FLIR Camera Selector &amp; Lens FOV Guide</h1>
+    <p class="sub">Recommend, browse, compare and calculate FOV — Yellotec sales tool.</p>
+  </div>
+  <div class="partner">
+    <strong>Yellotec · FLIR Partner</strong>
+    Verify SKU datasheet before quoting
+  </div>
+</header>
+<nav class="tabs" role="tablist" aria-label="Selector modes">
+  <button type="button" class="tab is-on" data-tab="recommend" role="tab">Recommend</button>
+  <button type="button" class="tab" data-tab="browse" role="tab">Browse</button>
+  <button type="button" class="tab" data-tab="compare" role="tab">Compare</button>
+  <button type="button" class="tab" data-tab="fov" role="tab">FOV</button>
+</nav>
+<main class="wrap">
+  <section class="panel" id="lensPanel">
+    <h2>Camera categories</h2>
+    <p class="lens-hint">Hover or click a lens segment to filter</p>
+    <div class="lens-wrap">
+      <svg class="lens-svg" id="lens" viewBox="0 0 320 320" role="img" aria-label="Camera category aperture">
+        <defs>
+          <radialGradient id="glassGrad" cx="40%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.55"/>
+            <stop offset="55%" stop-color="#888888" stop-opacity="0.15"/>
+            <stop offset="100%" stop-color="#000000" stop-opacity="0.35"/>
+          </radialGradient>
+        </defs>
+        <circle class="lens-ring-outer" cx="160" cy="160" r="152"/>
+        <circle class="lens-ring" cx="160" cy="160" r="148"/>
+        <g id="segments"></g>
+        <circle class="lens-glass" cx="160" cy="160" r="138"/>
+        <circle class="lens-hub" id="lensHub" cx="160" cy="160" r="28"/>
+        <text class="lens-hub-i" x="160" y="161">i</text>
+      </svg>
+      <p class="filter-note" id="filterNote"></p>
+      <button type="button" class="clear-btn" id="clearWheel">Clear category</button>
+    </div>
+  </section>
+  <section class="panel">
+    <h2>Applications</h2>
+    <div class="app-list" id="appList"></div>
+  </section>
+  <section class="panel">
+    <h2 id="resultsTitle">Results</h2>
+    <div class="results-head">
+      <p class="count" id="sinceCount">—</p>
+      <p class="hint" id="sinceHint">Pick an application or category to start.</p>
+    </div>
+    <div class="results-body" id="results"></div>
+    <a class="cta" href="mailto:sales@yellotec.com?subject=FLIR%20camera%20recommendation">Ask Yellotec<small>sales@yellotec.com</small></a>
+  </section>
+</main>
+<footer class="footer">
+  <span>Specs from FLIR product/support pages. Unverified figures are flagged, not invented. Discontinued models labelled for installed-base conversations.</span>
+  <span>Yellotec · www.yellotec.com</span>
+</footer>
+<div class="bottombar"></div>
+<script>
+const CAMERAS = [{"id": "c3x", "name": "FLIR C3-X", "category": "Pocket", "wheel": "handheld", "apps": ["Electrical panels", "Building envelope", "HVAC / mechanical", "Predictive maintenance"], "ir": "128 × 96", "netd": "<70 mK", "tempRange": "−20 to 300 °C", "accuracy": "±3 °C or ±3% (range-dependent)", "spectral": "8–14 µm", "lenses": "Fixed ~53.6°", "ifovNote": "7.9 mrad/pixel", "focus": "Focus-free", "typical": "Pocket first-look electrical, building and maintenance checks with Ignite", "source": "https://www.flir.com/en-gb/products/c3-x/", "lensData": [{"label": "54° fixed", "fovH": 53.6, "fovV": 42, "ifovMrad": 7.9}]}, {"id": "c5", "name": "FLIR C5", "category": "Pocket", "wheel": "handheld", "apps": ["Electrical panels", "Building envelope", "HVAC / mechanical", "Predictive maintenance"], "ir": "160 × 120", "netd": "<70 mK", "tempRange": "−20 to 400 °C", "accuracy": "±3 °C or ±3% (range-dependent)", "spectral": "LWIR pocket", "lenses": "Fixed 54° × 42°", "ifovNote": "6.3 mrad/pixel", "focus": "Focus-free", "typical": "Pocket electrical/building surveys; higher res than C3-X", "source": "https://support.flir.com/DsDownload/Assets/89401-0101-en-US.html", "lensData": [{"label": "54° fixed", "fovH": 54, "fovV": 42, "ifovMrad": 6.3}]}, {"id": "oneedge", "name": "FLIR ONE Edge Pro", "category": "Pocket", "wheel": "handheld", "apps": ["Electrical panels", "Building envelope", "HVAC / mechanical"], "ir": "160 × 120", "netd": "<70 mK", "tempRange": "−20 to 120 °C; 0 to 400 °C", "accuracy": "See FLIR ONE Edge Pro datasheet (phone-attached)", "spectral": "LWIR smartphone accessory", "lenses": "Fixed ~54° × 42°", "ifovNote": "Not consistently published as mrad on all pages", "focus": "Focus-free", "typical": "Wireless phone-clip surveys for quick electrical and building scans", "source": "https://www.flir.com/products/flir-one-edge-pro/", "lensData": [{"label": "54° fixed", "fovH": 54, "fovV": 42, "ifovMrad": 6.3}], "notes": "IFOV not verified as a single published mrad figure; FOV ~54×42 used for FOV tool."}, {"id": "e5xt", "name": "FLIR E5-XT", "category": "Entry", "wheel": "handheld", "apps": ["Electrical panels", "Building envelope", "HVAC / mechanical", "Predictive maintenance"], "ir": "160 × 120", "netd": "<100 mK", "tempRange": "−20 to 400 °C", "accuracy": "±2 °C or ±2%", "spectral": "LWIR", "lenses": "Fixed 45° × 34°", "ifovNote": "5.2 mrad", "focus": "Focus-free", "typical": "Legacy entry Ex (discontinued; succeeded by E5 Pro)", "source": "https://www.flir.com/products/e5-xt/", "lensData": [{"label": "45° fixed", "fovH": 45, "fovV": 34, "ifovMrad": 5.2}], "status": "Discontinued"}, {"id": "e6xt", "name": "FLIR E6-XT", "category": "Entry", "wheel": "handheld", "apps": ["Electrical panels", "Building envelope", "HVAC / mechanical", "Predictive maintenance", "Rotating machines"], "ir": "240 × 180", "netd": "<60 mK", "tempRange": "−20 to 550 °C", "accuracy": "±2 °C or ±2%", "spectral": "LWIR", "lenses": "Fixed 45° × 34°", "ifovNote": "3.4 mrad", "focus": "Focus-free", "typical": "Legacy mid-entry Ex (discontinued; succeeded by E6 Pro)", "source": "https://support.flir.com/DsDownload/App/Compare/?Lang=En&PN_LIST=63906-0604%2C63909-1004%2C63907-0804%2C63908-0905", "lensData": [{"label": "45° fixed", "fovH": 45, "fovV": 34, "ifovMrad": 3.4}], "status": "Discontinued"}, {"id": "e8xt", "name": "FLIR E8-XT", "category": "Entry", "wheel": "handheld", "apps": ["Electrical panels", "Building envelope", "HVAC / mechanical", "Predictive maintenance", "Rotating machines"], "ir": "320 × 240", "netd": "<50 mK", "tempRange": "−20 to 550 °C", "accuracy": "±2 °C or ±2%", "spectral": "LWIR", "lenses": "Fixed 45° × 34°", "ifovNote": "2.6 mrad", "focus": "Focus-free", "typical": "Legacy top Ex fixed-lens (discontinued; succeeded by E8 Pro)", "source": "https://www.flir.com/en-gb/products/e8-xt/", "lensData": [{"label": "45° fixed", "fovH": 45, "fovV": 34, "ifovMrad": 2.6}], "status": "Discontinued"}, {"id": "e5pro", "name": "FLIR E5 Pro", "category": "Entry", "wheel": "handheld", "apps": ["Electrical panels", "Building envelope", "HVAC / mechanical", "Predictive maintenance"], "ir": "160 × 120", "netd": "<60 mK @ 30 °C", "tempRange": "−20 to 400 °C (two ranges)", "accuracy": "±2 °C or ±2% (low range)", "spectral": "7.5–13 µm", "lenses": "Fixed 33° × 25°", "ifovNote": "3.7 mrad", "focus": "Fixed focus", "typical": "Current entry Pro with Ignite for electrical and building", "source": "https://support.flir.com/DsDownload/App/Compare/?Lang=En&PN_LIST=13301-0101%2C13302-0201%2C13303-0302", "lensData": [{"label": "33° fixed", "fovH": 33, "fovV": 25, "ifovMrad": 3.7}]}, {"id": "e6pro", "name": "FLIR E6 Pro", "category": "Entry", "wheel": "handheld", "apps": ["Electrical panels", "Building envelope", "HVAC / mechanical", "Predictive maintenance", "Rotating machines"], "ir": "240 × 180", "netd": "<50 mK @ 30 °C", "tempRange": "−20 to 550 °C (two ranges)", "accuracy": "±2 °C or ±2%", "spectral": "7.5–13 µm", "lenses": "Fixed 33° × 25°", "ifovNote": "2.5 mrad", "focus": "Fixed focus", "typical": "Current mid Pro for electrical/mechanical routes", "source": "https://support.flir.com/DsDownload/App/Compare/?Lang=En&PN_LIST=13301-0101%2C13302-0201%2C13303-0302", "lensData": [{"label": "33° fixed", "fovH": 33, "fovV": 25, "ifovMrad": 2.5}]}, {"id": "e8pro", "name": "FLIR E8 Pro", "category": "Entry", "wheel": "handheld", "apps": ["Electrical panels", "Building envelope", "HVAC / mechanical", "Predictive maintenance", "Rotating machines"], "ir": "320 × 240", "netd": "<40 mK @ 30 °C", "tempRange": "−20 to 200 °C; 10 to 550 °C", "accuracy": "±2 °C or ±2%", "spectral": "7.5–13 µm", "lenses": "Fixed 33° × 25°", "ifovNote": "1.8 mrad", "focus": "Fixed focus", "typical": "Top fixed-lens Pro for electrical and mechanical inspection", "source": "https://www.flir.com/products/e8-pro/", "lensData": [{"label": "33° fixed", "fovH": 33, "fovV": 25, "ifovMrad": 1.8}]}, {"id": "e54", "name": "FLIR E54", "category": "Exx Pro", "wheel": "handheld", "apps": ["Electrical panels", "Substations", "Rotating machines", "HVAC / mechanical", "Predictive maintenance", "Building envelope"], "ir": "320 × 240", "netd": "<40 mK @ 30 °C", "tempRange": "−20 to 120 °C; 0 to 650 °C", "accuracy": "±2 °C or ±2%", "spectral": "7.5–14 µm", "lenses": "24° × 18° (standard kit)", "ifovNote": "1.31 mrad/pixel (24°)", "focus": "Manual", "typical": "Exx starter for CM routes; Inspection Route + Ignite", "source": "https://www.flir.com/products/e54", "lensData": [{"label": "24°", "fovH": 24, "fovV": 18, "ifovMrad": 1.31}], "notes": "Lens Identification NA on product page; treated as fixed 24° kit lens."}, {"id": "e76", "name": "FLIR E76", "category": "Exx Pro", "wheel": "handheld", "apps": ["Electrical panels", "Substations", "Overhead lines", "Rotating machines", "HVAC / mechanical", "Predictive maintenance"], "ir": "320 × 240", "netd": "<30 mK (42°); <40 mK (24°); <50 mK (14°); <40 mK (80°)", "tempRange": "−20 to 120 °C; 0 to 650 °C", "accuracy": "±2 °C or ±2%", "spectral": "7.5–14 µm", "lenses": "42°, 24°, 14°, 80°, FlexView", "ifovNote": "42° 2.41; 24° 1.31; 14° 0.75; 80° 5.2 mrad/px", "focus": "Continuous / one-shot LDM, contrast, manual", "typical": "Plant Exx with interchangeable lenses and laser AF", "source": "https://www.flir.com/products/e76/", "lensData": [{"label": "42° wide", "fovH": 42, "fovV": 32, "ifovMrad": 2.41}, {"label": "24° standard", "fovH": 24, "fovV": 18, "ifovMrad": 1.31}, {"label": "14° tele", "fovH": 14, "fovV": 10, "ifovMrad": 0.75}, {"label": "80° ultra-wide", "fovH": 80, "fovV": 63, "ifovMrad": 5.2}]}, {"id": "e86", "name": "FLIR E86", "category": "Exx Pro", "wheel": "handheld", "apps": ["Electrical panels", "Substations", "Overhead lines", "Rotating machines", "HVAC / mechanical", "Predictive maintenance", "R&D / high temp"], "ir": "464 × 348", "netd": "<30 mK (42°); <40 mK (24°); <50 mK (14°); <40 mK (80°)", "tempRange": "−20 to 120 °C; 0 to 650 °C; 300 to 1500 °C", "accuracy": "±2 °C or ±2%", "spectral": "7.5–14 µm", "lenses": "42°, 24°, 14°, 80°, FlexView", "ifovNote": "42° 1.66; 24° 0.90; 14° 0.52; 80° 3.6 mrad/px", "focus": "Continuous / one-shot LDM, contrast, manual", "typical": "Mid-high Exx for electrical/mechanical with high-temp range", "source": "https://www.flir.com/products/e86/", "lensData": [{"label": "42° wide", "fovH": 42, "fovV": 32, "ifovMrad": 1.66}, {"label": "24° standard", "fovH": 24, "fovV": 18, "ifovMrad": 0.9}, {"label": "14° tele", "fovH": 14, "fovV": 10, "ifovMrad": 0.52}, {"label": "80° ultra-wide", "fovH": 80, "fovV": 63, "ifovMrad": 3.6}], "wheelExtra": ["research"]}, {"id": "e96", "name": "FLIR E96", "category": "Exx Pro", "wheel": "handheld", "apps": ["Electrical panels", "Substations", "Overhead lines", "Rotating machines", "HVAC / mechanical", "Predictive maintenance", "R&D / high temp"], "ir": "640 × 480", "netd": "<30 mK (42°); <40 mK (24°); <50 mK (14°); <30 mK (80°)", "tempRange": "−20 to 120 °C; 0 to 650 °C; 300 to 1500 °C", "accuracy": "±2 °C or ±2%", "spectral": "7.5–14 µm", "lenses": "42°, 24°, 14°, 80°, FlexView", "ifovNote": "42° 1.20; 24° 0.66; 14° 0.38; 80° 2.6 mrad/px", "focus": "Continuous / one-shot LDM, contrast, manual", "typical": "Top pistol-grip Exx for HV electrical and detailed mechanical", "source": "https://www.flir.com/products/e96/", "lensData": [{"label": "42° wide", "fovH": 42, "fovV": 32, "ifovMrad": 1.2}, {"label": "24° standard", "fovH": 24, "fovV": 18, "ifovMrad": 0.66}, {"label": "14° tele", "fovH": 14, "fovV": 10, "ifovMrad": 0.38}, {"label": "80° ultra-wide", "fovH": 80, "fovV": 63, "ifovMrad": 2.6}], "wheelExtra": ["research"]}, {"id": "t530", "name": "FLIR T530", "category": "T-Series", "wheel": "handheld", "apps": ["Electrical panels", "Substations", "Overhead lines", "Rotating machines", "Predictive maintenance", "HVAC / mechanical"], "ir": "320 × 240", "netd": "<30 mK (42°); <40 mK (24°); <50 mK (14°); <40 mK (80°)", "tempRange": "−20 to 120 °C; 0 to 650 °C", "accuracy": "±2 °C or ±2%", "spectral": "7.5–14 µm", "lenses": "42°, 24°, 14°, 80°, FlexView", "ifovNote": "42° 2.41; 24° 1.31; 14° 0.75; 80° 5.2 mrad/px", "focus": "Continuous LDM, one-shot LDM/contrast, manual", "typical": "Ergonomic T entry for plant electrical/mechanical", "source": "https://www.flir.com/products/t530/", "lensData": [{"label": "42° wide", "fovH": 42, "fovV": 32, "ifovMrad": 2.41}, {"label": "24° standard", "fovH": 24, "fovV": 18, "ifovMrad": 1.31}, {"label": "14° tele", "fovH": 14, "fovV": 10, "ifovMrad": 0.75}, {"label": "80° ultra-wide", "fovH": 80, "fovV": 63, "ifovMrad": 5.2}]}, {"id": "t540", "name": "FLIR T540", "category": "T-Series", "wheel": "handheld", "apps": ["Electrical panels", "Substations", "Overhead lines", "Rotating machines", "Predictive maintenance", "R&D / high temp"], "ir": "464 × 348", "netd": "<30 mK (42°); <40 mK (24°); <50 mK (14°)", "tempRange": "−20 to 120 °C; 0 to 650 °C; 300 to 1500 °C", "accuracy": "±2 °C or ±2%", "spectral": "7.5–14 µm", "lenses": "42°, 24°, 14° (+ AutoCal options)", "ifovNote": "42° 1.66; 24° 0.90; 14° 0.52 mrad/px", "focus": "Continuous LDM, one-shot LDM/contrast, manual", "typical": "Mid T-Series for detailed electrical and mechanical", "source": "https://www.flir.com/products/t540/", "lensData": [{"label": "42° wide", "fovH": 42, "fovV": 32, "ifovMrad": 1.66}, {"label": "24° standard", "fovH": 24, "fovV": 18, "ifovMrad": 0.9}, {"label": "14° tele", "fovH": 14, "fovV": 10, "ifovMrad": 0.52}], "wheelExtra": ["research"]}, {"id": "t560", "name": "FLIR T560", "category": "T-Series", "wheel": "handheld", "apps": ["Electrical panels", "Substations", "Overhead lines", "Rotating machines", "Predictive maintenance", "R&D / high temp"], "ir": "640 × 480", "netd": "<30 mK (42°); <40 mK (24°); <50 mK (14°)", "tempRange": "−20 to 120 °C; 0 to 650 °C; 300 to 1500 °C", "accuracy": "±2 °C or ±2%", "spectral": "7.5–14 µm", "lenses": "42°, 24°, 14°, 80°, FlexView", "ifovNote": "42° 1.20; 24° 0.66; 14° 0.38; 80° 2.6 mrad/px", "focus": "Continuous LDM, one-shot LDM/contrast, manual", "typical": "High-res T without viewfinder for plant and utility work", "source": "https://www.flir.com/products/T560", "lensData": [{"label": "42° wide", "fovH": 42, "fovV": 32, "ifovMrad": 1.2}, {"label": "24° standard", "fovH": 24, "fovV": 18, "ifovMrad": 0.66}, {"label": "14° tele", "fovH": 14, "fovV": 10, "ifovMrad": 0.38}, {"label": "80° ultra-wide", "fovH": 80, "fovV": 63, "ifovMrad": 2.6}], "wheelExtra": ["research"]}, {"id": "t840", "name": "FLIR T840", "category": "T-Series", "wheel": "handheld", "apps": ["Electrical panels", "Substations", "Overhead lines", "Rotating machines", "Predictive maintenance", "R&D / high temp"], "ir": "464 × 348", "netd": "<30 mK (42°); <40 mK (24°); <50 mK (14°)", "tempRange": "−20 to 120 °C; 0 to 650 °C; 300 to 1500 °C", "accuracy": "±2 °C or ±2%", "spectral": "7.5–14 µm", "lenses": "42°, 24°, 14°, 80°, 6°, FlexView", "ifovNote": "24° 0.90; 80° 3.6 mrad/px (42°/14°/6° family-consistent)", "focus": "Continuous LDM; 180° rotating optic; viewfinder", "typical": "Outdoor HV and awkward angles with viewfinder + rotating block", "source": "https://www.flir.com/products/t840/", "lensData": [{"label": "42° wide", "fovH": 42, "fovV": 32, "ifovMrad": 1.66}, {"label": "24° standard", "fovH": 24, "fovV": 18, "ifovMrad": 0.9}, {"label": "14° tele", "fovH": 14, "fovV": 10, "ifovMrad": 0.52}, {"label": "6° tele", "fovH": 6, "fovV": 4.5, "ifovMrad": 0.24}, {"label": "80° ultra-wide", "fovH": 80, "fovV": 63, "ifovMrad": 3.6}], "notes": "T840 42°/14°/6° IFOV taken from 464×348 family table; confirm SKU datasheet.", "wheelExtra": ["research"]}, {"id": "t860", "name": "FLIR T860", "category": "T-Series", "wheel": "handheld", "apps": ["Electrical panels", "Substations", "Overhead lines", "Rotating machines", "Predictive maintenance", "R&D / high temp"], "ir": "640 × 480", "netd": "<30 mK (42°); <40 mK (24°); <50 mK (14°/6°)", "tempRange": "−20 to 120 °C; 0 to 650 °C; 300 to 2000 °C", "accuracy": "±2 °C or ±2%", "spectral": "7.5–14 µm", "lenses": "42°, 24°, 14°, 6°, 80°, FlexView", "ifovNote": "42° 1.20; 24° 0.66; 14° 0.38; 6° 0.17 mrad/px", "focus": "Continuous LDM; viewfinder", "typical": "Top handheld for long-range OHL and high-detail electrical", "source": "https://support.flir.com/DsDownload/Assets/89211-0101-en-US.html", "lensData": [{"label": "42° wide", "fovH": 42, "fovV": 32, "ifovMrad": 1.2}, {"label": "24° standard", "fovH": 24, "fovV": 18, "ifovMrad": 0.66}, {"label": "14° tele", "fovH": 14, "fovV": 10, "ifovMrad": 0.38}, {"label": "6° tele", "fovH": 6, "fovV": 4.5, "ifovMrad": 0.17}], "wheelExtra": ["research"]}, {"id": "t1020", "name": "FLIR T1020 (T1K)", "category": "T-Series", "wheel": "handheld", "apps": ["Substations", "Overhead lines", "R&D / high temp", "Predictive maintenance", "Electrical panels", "Rotating machines"], "ir": "1024 × 768 (UltraMax up to ~3.1 MP)", "netd": "<20 mK @ 30 °C", "tempRange": "−40 to 2000 °C (published T-Series high-end)", "accuracy": "±2 °C or ±2%", "spectral": "LWIR HD", "lenses": "12°, 28°, 45° (optional 7°, close-up)", "ifovNote": "28° 0.47 mrad; 12° ~0.20 mrad (published)", "focus": "One-shot or manual; viewfinder", "typical": "HD utility and R&D inspections; finest handheld spatial resolution on this page", "source": "https://www.flir.com/products/t1020/", "lensData": [{"label": "45°", "fovH": 45, "fovV": 34, "ifovMrad": 0.8}, {"label": "28°", "fovH": 28, "fovV": 21, "ifovMrad": 0.47}, {"label": "12° tele", "fovH": 12, "fovV": 9, "ifovMrad": 0.2}], "notes": "45° IFOV ~0.80 mrad from T1030sc family datasheet; confirm exact T1020 SKU.", "wheelExtra": ["research"]}, {"id": "t1030", "name": "FLIR T1030sc", "category": "T-Series", "wheel": "research", "apps": ["R&D / high temp", "Predictive maintenance", "Substations", "Overhead lines"], "ir": "1024 × 768", "netd": "<20 mK @ 30 °C", "tempRange": "−40 to 2000 °C (science kit; confirm SKU)", "accuracy": "±2 °C or ±2% (typical T1K family)", "spectral": "LWIR HD science", "lenses": "28° standard; 12°, 45° options", "ifovNote": "28° 0.47 mrad; 45° 0.80 mrad", "focus": "One-shot or manual", "typical": "Science / R&D HD radiometric camera related to T1020", "source": "https://support.flir.com/DsDownload/Assets/72501-0202-en-US.html", "lensData": [{"label": "28°", "fovH": 28, "fovV": 21, "ifovMrad": 0.47}, {"label": "45°", "fovH": 45, "fovV": 34, "ifovMrad": 0.8}], "notes": "Science-oriented SKU; confirm temperature ranges on the exact T1030sc datasheet before quoting.", "wheelExtra": ["handheld", "research"]}, {"id": "gf77", "name": "FLIR GF77", "category": "OGI", "wheel": "ogi", "apps": ["Methane / VOC OGI", "SF6 / specialty gas", "Predictive maintenance", "Substations"], "ir": "320 × 240", "netd": "<25 mK (25°); <40 mK (6°)", "tempRange": "Radiometric thermography supported (see datasheet)", "accuracy": "≤100 °C ±3 °C; >100 °C ±3%", "spectral": "LR 7–8.5 µm (CH₄); HR 9.5–12 µm (SF₆, NH₃)", "lenses": "25° and 6°, LR or HR", "ifovNote": "25° 1.4; 6° 0.36 mrad/px", "focus": "Continuous LDM, one-shot LDM/contrast, manual", "typical": "Uncooled handheld OGI for methane and SF₆ by lens choice", "source": "https://www.flir.com/products/gf77/", "lensData": [{"label": "25°", "fovH": 25, "fovV": 19, "ifovMrad": 1.4}, {"label": "6° tele", "fovH": 6.4, "fovV": 4.9, "ifovMrad": 0.36}], "wheelExtra": ["leak"]}, {"id": "gf77a", "name": "FLIR GF77a", "category": "OGI", "wheel": "ogi", "apps": ["Methane / VOC OGI", "Fixed / process", "Predictive maintenance"], "ir": "320 × 240", "netd": "<25 mK @ 30 °C", "tempRange": "Fixed OGI streaming (see datasheet)", "accuracy": "See GF77a datasheet", "spectral": "7–8.5 µm (CH₄ and related)", "lenses": "25° and 6°", "ifovNote": "1.4 mrad/pixel (25°)", "focus": "One-shot contrast, motorized, manual", "typical": "Fixed uncooled methane OGI for continuous monitoring", "source": "https://www.flir.com/products/gf77a", "lensData": [{"label": "25°", "fovH": 25, "fovV": 19, "ifovMrad": 1.4}, {"label": "6° tele", "fovH": 6.4, "fovV": 4.9, "ifovMrad": 0.36}], "wheelExtra": ["leak", "automation"]}, {"id": "gf320", "name": "FLIR GF320", "category": "OGI", "wheel": "ogi", "apps": ["Methane / VOC OGI", "Predictive maintenance"], "ir": "320 × 240", "netd": "<10 mK @ 30 °C", "tempRange": "Radiometric (see datasheet); high-temp option", "accuracy": "±1 °C (0–100 °C) or ±2% (>100 °C)", "spectral": "3.2–3.4 µm (cooled InSb hydrocarbons/VOCs)", "lenses": "14.5° × 10.8° typical", "ifovNote": "Not listed as mrad on the product summary used", "focus": "Auto and manual", "typical": "Legacy cooled methane/VOC OGI (discontinued; G-Series successors)", "source": "https://www.flir.com/products/gf320/", "lensData": [{"label": "14.5°", "fovH": 14.5, "fovV": 10.8, "ifovMrad": 0.8}], "status": "Discontinued", "notes": "IFOV estimated for FOV tool only (~0.8 mrad from 320 px / 14.5°). Prefer G-Series for new sales.", "wheelExtra": ["leak"]}, {"id": "gf306", "name": "FLIR GF306", "category": "OGI", "wheel": "ogi", "apps": ["SF6 / specialty gas", "Substations", "Predictive maintenance"], "ir": "320 × 240", "netd": "<15 mK @ 30 °C", "tempRange": "Radiometric (see datasheet)", "accuracy": "±1 °C (0–100 °C) or ±2% (>100 °C)", "spectral": "10.3–10.7 µm (cooled QWIP; SF₆)", "lenses": "14.5° × 10.8°", "ifovNote": "Not listed as mrad on product summary", "focus": "Auto (one touch) or manual", "typical": "Legacy cooled SF₆ OGI (discontinued; G306 recommended successor)", "source": "https://www.flir.com/products/gf306/", "lensData": [{"label": "14.5°", "fovH": 14.5, "fovV": 10.8, "ifovMrad": 0.8}], "status": "Discontinued", "notes": "IFOV for FOV tool estimated; confirm datasheet. Successor G306 for new quotes.", "wheelExtra": ["leak"]}, {"id": "gf309", "name": "FLIR GF309", "category": "OGI", "wheel": "fire", "apps": ["R&D / high temp", "Predictive maintenance"], "ir": "320 × 240", "netd": "<15 mK @ 30 °C (some listings <25 mK)", "tempRange": "−40 to 1500 °C", "accuracy": "±1 °C (0–100 °C) or ±2% (>100 °C)", "spectral": "3.8–4.05 µm cooled InSb (see-through-flame / furnace)", "lenses": "24° × 18° standard; 14.5°, 6° options", "ifovNote": "Not consistently published as mrad", "focus": "Auto and manual", "typical": "Furnace/boiler inspections through flames; high-temp R&D", "source": "https://www.flir.com/products/gf309/", "lensData": [{"label": "24°", "fovH": 24, "fovV": 18, "ifovMrad": 1.3}], "notes": "NETD listed as <15 mK and <25 mK on different pages; FOV-tool IFOV estimated. Dedicated FLIR K-Series firefighting cameras are not in this catalogue.", "wheelExtra": ["research", "ogi"]}, {"id": "gf343", "name": "FLIR GF343", "category": "OGI", "wheel": "ogi", "apps": ["Methane / VOC OGI", "Predictive maintenance"], "ir": "320 × 240", "netd": "<15 mK @ 30 °C", "tempRange": "See datasheet (CO₂ OGI)", "accuracy": "See datasheet", "spectral": "4.2–4.4 µm cooled InSb (CO₂)", "lenses": "14.5° (38 mm), 24° (23 mm)", "ifovNote": "Not published as mrad on brochure used", "focus": "Auto (one touch) or manual", "typical": "CO₂ optical gas imaging for CCS / process plants", "source": "https://www.kameryir.com.pl/wp-content/uploads/2020/05/FLIR_GF343_broch.pdf", "lensData": [{"label": "24°", "fovH": 24, "fovV": 18, "ifovMrad": 1.3}, {"label": "14.5°", "fovH": 14.5, "fovV": 10.8, "ifovMrad": 0.8}], "notes": "IFOV estimated for FOV tool; confirm current availability / G-Series path with FLIR.", "wheelExtra": ["leak"]}, {"id": "gf620", "name": "FLIR GF620", "category": "OGI", "wheel": "ogi", "apps": ["Methane / VOC OGI", "Predictive maintenance"], "ir": "640 × 480", "netd": "<20 mK @ 30 °C", "tempRange": "Radiometric (see datasheet); Q-Mode for QL320", "accuracy": "±1 °C (0–100 °C) or ±2% (>100 °C)", "spectral": "3.2–3.4 µm cooled InSb (methane/VOC)", "lenses": "14.5° × 10.8° (38 mm)", "ifovNote": "Not listed as mrad on product summary", "focus": "Manual", "typical": "Legacy HD cooled methane OGI with quantification mode (discontinued; G-Series successors)", "source": "https://www.flir.com/products/gf620/", "lensData": [{"label": "14.5°", "fovH": 14.5, "fovV": 10.8, "ifovMrad": 0.4}], "status": "Discontinued", "notes": "IFOV estimated (~0.4 mrad from 640 px / 14.5°); not a published FLIR mrad figure.", "wheelExtra": ["leak"]}, {"id": "si124", "name": "FLIR Si124", "category": "Acoustic", "wheel": "leak", "apps": ["Compressed air / PD", "Substations", "Predictive maintenance", "Electrical panels"], "ir": "Acoustic (not thermal) — 800 × 480 video overlay", "netd": "N/A (acoustic)", "tempRange": "N/A", "accuracy": "Leak rate / PD classification per FLIR acoustic specs", "spectral": "2–65 kHz bandwidth (124 MEMS mics)", "lenses": "Acoustic FOV 62° × 49°", "ifovNote": "N/A — acoustic localization, not IFOV", "focus": "N/A", "typical": "Compressed-air leak detection and electrical partial discharge; Si2-Pro is current successor", "source": "https://www.flir.com/products/si124/", "lensData": [{"label": "62° acoustic", "fovH": 62, "fovV": 49, "ifovMrad": 1}], "status": "Discontinued (Si2-Pro recommended)", "notes": "Not a thermal camera. Prefer Si2-Pro for new quotes."}, {"id": "a50", "name": "FLIR A50", "category": "Automation", "wheel": "automation", "apps": ["Fixed / process", "Predictive maintenance", "Electrical panels", "Rotating machines", "HVAC / mechanical"], "ir": "464 × 348", "netd": "29°/51° <35 mK; 95° <45 mK", "tempRange": "−20 to 175 °C; 175 to 1000 °C (config-dependent)", "accuracy": "±2 °C or ±2%", "spectral": "7.5–14 µm", "lenses": "29°, 51°, 95°", "ifovNote": "29° 1.2; 51° 2.1; 95° 4.0 mrad/px", "focus": "Fixed (tool-adjustable)", "typical": "Compact fixed monitoring for cabinets and process spots", "source": "https://www.flir.com/products/axxx-series-image-streaming/", "lensData": [{"label": "29°", "fovH": 29, "fovV": 29, "ifovMrad": 1.2}, {"label": "51°", "fovH": 51, "fovV": 51, "ifovMrad": 2.1}, {"label": "95°", "fovH": 95, "fovV": 95, "ifovMrad": 4.0}], "notes": "Vertical FOV not separately listed in summary datasheet excerpt."}, {"id": "a70", "name": "FLIR A70", "category": "Automation", "wheel": "automation", "apps": ["Fixed / process", "Predictive maintenance", "Electrical panels", "Rotating machines", "HVAC / mechanical"], "ir": "640 × 480", "netd": "29°/51° <45 mK; 95° <60 mK", "tempRange": "−20 to 175/250 °C; 175 to 1000 °C (config-dependent)", "accuracy": "±2 °C or ±2%", "spectral": "7.5–14 µm", "lenses": "29°, 51°, 95°", "ifovNote": "29° 0.84; 51° 1.5; 95° 2.9 mrad/px", "focus": "Fixed (tool-adjustable)", "typical": "Higher-res compact fixed early-warning", "source": "https://www.flir.com/products/axxx-series-image-streaming/", "lensData": [{"label": "29°", "fovH": 29, "fovV": 29, "ifovMrad": 0.84}, {"label": "51°", "fovH": 51, "fovV": 51, "ifovMrad": 1.5}, {"label": "95°", "fovH": 95, "fovV": 95, "ifovMrad": 2.9}]}, {"id": "a400", "name": "FLIR A400", "category": "Automation", "wheel": "automation", "apps": ["Fixed / process", "Predictive maintenance", "Electrical panels", "Rotating machines", "R&D / high temp"], "ir": "320 × 240", "netd": "Lens-dependent", "tempRange": "−20 to 120 °C; 0 to 650 °C; 300 to 1500 °C", "accuracy": "±2 °C or ±2%", "spectral": "7.5–14 µm", "lenses": "6°, 14°, 24°, 42°, 80°, Dual FOV, Macro", "ifovNote": "24° 1.31; 14° 0.75; 42° 2.41; 6° 0.34; 80° 5.2 mrad/px", "focus": "Motorized / one-shot contrast / manual", "typical": "Fixed radiometric streaming for plant CM", "source": "https://flir.custhelp.com/app/answers/detail/a_id/6402", "lensData": [{"label": "42° wide", "fovH": 42, "fovV": 32, "ifovMrad": 2.41}, {"label": "24° standard", "fovH": 24, "fovV": 18, "ifovMrad": 1.31}, {"label": "14° tele", "fovH": 14, "fovV": 10, "ifovMrad": 0.75}, {"label": "6° tele", "fovH": 6, "fovV": 4.5, "ifovMrad": 0.34}], "wheelExtra": ["research"]}, {"id": "a500", "name": "FLIR A500", "category": "Automation", "wheel": "automation", "apps": ["Fixed / process", "Predictive maintenance", "Electrical panels", "Rotating machines", "R&D / high temp"], "ir": "464 × 348", "netd": "<30 mK (42°); <40 mK (24°); <50 mK (14°)", "tempRange": "−20 to 120 °C; 0 to 650 °C; 300 to 1500 °C", "accuracy": "±2 °C or ±2%", "spectral": "7.5–14 µm", "lenses": "6°, 14°, 24°, 42°, 80°, Dual FOV, Macro", "ifovNote": "24° 0.90; 14° 0.52; 42° 1.66; 6° 0.24; 80° 3.6 mrad/px", "focus": "Motorized / one-shot contrast / manual", "typical": "Fixed mid-res Smart Sensor / streaming", "source": "https://www.flir.com/products/axxx-series-smart-sensor/", "lensData": [{"label": "42° wide", "fovH": 42, "fovV": 32, "ifovMrad": 1.66}, {"label": "24° standard", "fovH": 24, "fovV": 18, "ifovMrad": 0.9}, {"label": "14° tele", "fovH": 14, "fovV": 10, "ifovMrad": 0.52}, {"label": "6° tele", "fovH": 6, "fovV": 4.5, "ifovMrad": 0.24}], "wheelExtra": ["research"]}, {"id": "a700", "name": "FLIR A700", "category": "Automation", "wheel": "automation", "apps": ["Fixed / process", "Predictive maintenance", "Electrical panels", "Rotating machines", "R&D / high temp"], "ir": "640 × 480", "netd": "Lens-dependent (confirm per optic)", "tempRange": "−20 to 120 °C; 0 to 650 °C; 300 to 2000 °C", "accuracy": "±2 °C or ±2%", "spectral": "7.5–14 µm", "lenses": "6°, 14°, 24°, 42°, 80°, Dual FOV, Macro", "ifovNote": "24° 0.66; 14° 0.38; 42° 1.20; 6° 0.17; 80° 2.6 mrad/px", "focus": "Motorized / one-shot contrast / manual", "typical": "Highest-res Axxx fixed radiometric camera", "source": "https://flir.custhelp.com/app/answers/detail/a_id/6402", "lensData": [{"label": "42° wide", "fovH": 42, "fovV": 32, "ifovMrad": 1.2}, {"label": "24° standard", "fovH": 24, "fovV": 18, "ifovMrad": 0.66}, {"label": "14° tele", "fovH": 14, "fovV": 10, "ifovMrad": 0.38}, {"label": "6° tele", "fovH": 6, "fovV": 4.5, "ifovMrad": 0.17}], "wheelExtra": ["research"]}];
+const RECS = [{"id": "panels", "label": "Electrical panels", "need": "Close range (~0.5–1 m). Small spot size for terminals; good NETD for load heating.", "bestId": "e96", "bestWhy": "640 × 480, 24° IFOV 0.66 mrad — finest Exx spot at panel distance.", "runnerId": "e86", "runnerWhy": "464 × 348 with same Exx lenses; strong mid step with high-temp range to 1500 °C.", "suitableIds": ["c3x", "c5", "oneedge", "e5pro", "e6pro", "e8pro", "e5xt", "e6xt", "e8xt", "e54", "e76", "e86", "e96", "t530", "t540", "t560", "t840", "t860", "t1020", "a50", "a70", "a400", "a500", "a700", "si124"], "lensTip": "24° (or FlexView) at ~0.75 m; Si124 adds PD/air-leak acoustic, not thermal.", "scene": "panel"}, {"id": "substations", "label": "Substations", "need": "Outdoor HV mix: bus at distance, awkward angles, sunlit yards; PD acoustic is a useful companion.", "bestId": "t860", "bestWhy": "640 × 480, viewfinder, 6°/14° tele, temp to 2000 °C for yard distances.", "runnerId": "t840", "runnerWhy": "Viewfinder + 180° rotating optic; 464 × 348 with 6° tele for awkward bays.", "suitableIds": ["e54", "e76", "e86", "e96", "t530", "t540", "t560", "t840", "t860", "t1020", "gf77", "gf306", "si124", "a500", "a700"], "lensTip": "6° or 14° for distant bus; GF77 HR / GF306 for SF₆; Si124 for PD.", "scene": "ohl"}, {"id": "ohl", "label": "Overhead power lines", "need": "Long range (10–30 m). Telephoto and fine IFOV for clamps/joints.", "bestId": "t860", "bestWhy": "640 × 480 + 6° at 0.17 mrad — smallest handheld spot at distance here.", "runnerId": "t1020", "runnerWhy": "1024 × 768 HD with 12° ~0.20 mrad when ultimate spatial resolution is required.", "suitableIds": ["e76", "e86", "e96", "t530", "t540", "t560", "t840", "t860", "t1020", "t1030"], "lensTip": "Lead with 6°/12°/14° tele; avoid 42° at 20 m for joints.", "scene": "ohl"}, {"id": "machines", "label": "Rotating machines / bearings", "need": "Medium range (~1–3 m). Resolve bearings/couplings; overview of the train.", "bestId": "e96", "bestWhy": "640 × 480 and 0.66 mrad (24°) keep bearing spots small at ~2 m.", "runnerId": "e86", "runnerWhy": "464 × 348 Exx with interchangeable lenses and high-temp range.", "suitableIds": ["e6pro", "e8pro", "e54", "e76", "e86", "e96", "t530", "t540", "t560", "t840", "t860", "a50", "a70", "a400", "a500", "a700"], "lensTip": "24° for bearings; 42° for whole skid overview.", "scene": "machine"}, {"id": "building", "label": "Building envelope / insulation", "need": "Wide FOV, portability, moisture/insulation contrast; extreme telephoto rarely needed.", "bestId": "e8pro", "bestWhy": "320 × 240, <40 mK, fixed 33° — solid building/electrical Pro with Ignite.", "runnerId": "c5", "runnerWhy": "Pocket 160 × 120, 54° FOV for fast walk-throughs and Ignite sharing.", "suitableIds": ["c3x", "c5", "oneedge", "e5pro", "e6pro", "e8pro", "e5xt", "e6xt", "e8xt", "e54", "e76"], "lensTip": "Wide/fixed lenses preferred; MSX helps context on walls and ceilings.", "scene": "panel"}, {"id": "hvac", "label": "HVAC / mechanical", "need": "Motors, coils, ducts, pumps — mid range, good NETD, portable.", "bestId": "e76", "bestWhy": "Interchangeable lenses + laser AF for plant mechanical rounds at 320 × 240.", "runnerId": "e8pro", "runnerWhy": "Fixed-lens 320 × 240 Pro when lenses are not required.", "suitableIds": ["c5", "e6pro", "e8pro", "e54", "e76", "e86", "e96", "t530", "t540", "a50", "a70", "si124"], "lensTip": "24°/42° for equipment rooms; Si124 for compressed-air leaks on the same route.", "scene": "machine"}, {"id": "methane", "label": "Optical gas — methane / VOC", "need": "Spectral filter for hydrocarbons (≈3.2–3.4 µm cooled or 7–8.5 µm uncooled LR), not only temperature.", "bestId": "gf77", "bestWhy": "Current uncooled handheld OGI with LR CH₄ filter; NETD <25 mK (25°).", "runnerId": "gf620", "runnerWhy": "Legacy HD cooled 640 × 480 methane OGI (discontinued) — cite for installed base; quote G-Series for new.", "suitableIds": ["gf77", "gf77a", "gf320", "gf620", "gf343"], "lensTip": "GF77 LR 25° walk-around; 6° tele standoff; GF77a for fixed continuous; GF343 is CO₂ not methane.", "scene": "machine"}, {"id": "sf6", "label": "Optical gas — SF₆ and specialty", "need": "SF₆ / NH₃ spectral response (HR ~9.5–12 µm or cooled ~10.3–10.7 µm).", "bestId": "gf77", "bestWhy": "HR lens option 9.5–12 µm for SF₆/NH₃ on current uncooled handheld.", "runnerId": "gf306", "runnerWhy": "Legacy cooled SF₆ specialist (discontinued); G306 is FLIR’s stated successor path.", "suitableIds": ["gf77", "gf306"], "lensTip": "GF77 HR lenses for SF₆; keep LR for methane on the same body by swapping.", "scene": "ohl"}, {"id": "rd", "label": "R&D / elevated temperature", "need": "High object-temperature ranges, fine NETD, HD or see-through-flame where needed.", "bestId": "t1020", "bestWhy": "1024 × 768, <20 mK, high-temp capability — top handheld for R&D detail.", "runnerId": "gf309", "runnerWhy": "See-through-flame 3.8–4.05 µm furnace/boiler inspections to 1500 °C.", "suitableIds": ["e86", "e96", "t540", "t560", "t840", "t860", "t1020", "t1030", "gf309", "a500", "a700"], "lensTip": "Match tele/macro to sample size; GF309 for through-flame furnace work.", "scene": "machine"}, {"id": "pdm", "label": "General predictive maintenance", "need": "Broad electrical + mechanical CM; route software and shareable reports help.", "bestId": "e96", "bestWhy": "640 × 480 Exx with lenses, Inspection Route and Ignite covers most PdM routes.", "runnerId": "e76", "runnerWhy": "Same platform at 320 × 240 when budget or weight matter more than HD.", "suitableIds": ["c5", "e6pro", "e8pro", "e54", "e76", "e86", "e96", "t530", "t540", "t560", "t840", "t860", "a50", "a70", "a400", "a500", "a700", "si124"], "lensTip": "Start 24°; add 14°/42° as the route mix demands; Si124 for air/PD add-on.", "scene": "machine"}, {"id": "fixed", "label": "Fixed / automation monitoring", "need": "Always-on radiometric or OGI streaming matched to mount distance.", "bestId": "a700", "bestWhy": "640 × 480 fixed with full Axxx lens set including 6° (0.17 mrad).", "runnerId": "a70", "runnerWhy": "Compact 640 × 480 fixed for cabinets when full Axxx optics are not needed.", "suitableIds": ["a50", "a70", "a400", "a500", "a700", "gf77a"], "lensTip": "Tele for distant assets; wide/95° for close cabinets; GF77a for fixed methane.", "scene": "machine"}, {"id": "acoustic", "label": "Compressed air leaks / partial discharge", "need": "Ultrasonic localization of air leaks or electrical PD — not a thermal measurement.", "bestId": "si124", "bestWhy": "124-mic acoustic imager for leaks and PD (2–65 kHz); Si2-Pro is current new-sale path.", "runnerId": "e96", "runnerWhy": "Thermal companion for the same electrical assets (hot spots), not a substitute for acoustic PD.", "suitableIds": ["si124", "e96", "t860", "gf77"], "lensTip": "Use Si124/Si2 for sound sources; pair with Exx/T for thermal confirmation.", "scene": "panel"}];
+const WHEEL = [{"id": "handheld", "label": "Handheld", "sub": "Ex · Exx · T"}, {"id": "ogi", "label": "OGI", "sub": "Gas imaging"}, {"id": "fire", "label": "Fire fighting", "sub": "Furnace / flame"}, {"id": "research", "label": "Research", "sub": "R&D · HD"}, {"id": "leak", "label": "Leak detection", "sub": "Acoustic · gas"}, {"id": "automation", "label": "Automation", "sub": "Fixed A-Series"}];
+const VERIFY = [["ONE Edge Pro IFOV", "FOV ~54×42 used; mrad not consistently published — flagged."], ["T840 42°/14°/6° IFOV", "Family-consistent 464×348 values; marketing page conflicted."], ["T1020 / T1030sc temp & 45° IFOV", "High-end T-Series listings + T1030sc datasheet; confirm SKU."], ["GF320 / GF306 / GF620 / GF343 IFOV", "Estimated for FOV tool from resolution÷FOV where mrad unpublished."], ["GF309 NETD", "Partner pages show <15 mK and <25 mK — both noted."], ["Si124", "Discontinued acoustic; Si2-Pro for new sales. Not thermal."], ["E5/E6/E8-XT", "Discontinued; Pro series are current fixed-lens Ex."], ["C8", "Still omitted — full FOV/IFOV not verified."], ["Fire fighting (K-Series)", "Dedicated FLIR K-Series firefighting cameras are not in this catalogue; GF309 covers see-through-flame furnace work only."], ["A50/A70 vertical FOV", "Angle options published without separate V figures."], ["A400/A700 NETD", "Lens-dependent; A500 per-lens NETD is published."]];
+const CX=160, CY=160, R=138, INNER=32;
+const N = WHEEL.length;
+const SCENES = {
+  panel: { title:"Electrical panels", distance:0.75, target:"~5–15 mm terminal / connection", detail:"Close range (0.5–1 m). Needs a small spot so a terminal fills enough pixels." },
+  ohl: { title:"Overhead power lines", distance:20, target:"clamp / joint / insulator hotspot", detail:"Long range (10–30 m). Telephoto shrinks FOV and spot size for distant joints." },
+  machine: { title:"Rotating machines", distance:2, target:"bearing / coupling / base", detail:"Medium range (1–3 m). Balance machine coverage vs bearing resolution." }
+};
+const TAG_MAP = {
+  panels:"Electrical panels", substations:"Substations", ohl:"Overhead lines",
+  machines:"Rotating machines", building:"Building envelope", hvac:"HVAC / mechanical",
+  methane:"Methane / VOC OGI", sf6:"SF6 / specialty gas", rd:"R&D / high temp",
+  pdm:"Predictive maintenance", fixed:"Fixed / process", acoustic:"Compressed air / PD"
+};
+
+let tab = "recommend";
+let selectedWheel = null;
+let selectedApp = "panels";
+let compareIds = ["e86","e96","t860"];
+let fovCamId = "e96";
+let fovScene = "panel";
+let fovDist = String(SCENES.panel.distance);
+let browseId = "e96";
+
+function polar(cx,cy,r,deg) {
+  const a = (deg - 90) * Math.PI / 180;
+  return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+}
+function wedgePath(i) {
+  const start = i * (360/N);
+  const end = (i+1) * (360/N);
+  const gap = 1.2;
+  const s = start + gap/2, e = end - gap/2;
+  const [x1,y1] = polar(CX,CY,R,s);
+  const [x2,y2] = polar(CX,CY,R,e);
+  const [ix1,iy1] = polar(CX,CY,INNER,s);
+  const [ix2,iy2] = polar(CX,CY,INNER,e);
+  const large = (e-s) > 180 ? 1 : 0;
+  return "M "+ix1+" "+iy1+" L "+x1+" "+y1+" A "+R+" "+R+" 0 "+large+" 1 "+x2+" "+y2+" L "+ix2+" "+iy2+" A "+INNER+" "+INNER+" 0 "+large+" 0 "+ix1+" "+iy1+" Z";
+}
+function labelPos(i) {
+  const mid = (i + 0.5) * (360/N);
+  return polar(CX,CY, R*0.62, mid);
+}
+function camById(id){ return CAMERAS.find(function(c){ return c.id===id; }) || CAMERAS[0]; }
+function wheelMatch(c, wid){
+  if (!wid) return true;
+  if (c.wheel === wid) return true;
+  return (c.wheelExtra||[]).indexOf(wid) >= 0;
+}
+function filteredCams(){
+  return CAMERAS.filter(function(c){
+    if (!wheelMatch(c, selectedWheel)) return false;
+    if (!selectedApp) return true;
+    if (tab === "recommend") {
+      var rec = RECS.find(function(r){ return r.id===selectedApp; });
+      return rec ? rec.suitableIds.indexOf(c.id) >= 0 : true;
+    }
+    var tag = TAG_MAP[selectedApp];
+    return tag ? c.apps.indexOf(tag) >= 0 : true;
+  });
+}
+function fmtMm(m){
+  if (m < 0.01) return (m*1000).toFixed(1)+" mm";
+  if (m < 1) return (m*1000).toFixed(0)+" mm";
+  return m.toFixed(2)+" m";
+}
+function fmtM(m){
+  if (m < 1) return (m*1000).toFixed(0)+" mm";
+  return m.toFixed(2)+" m";
+}
+function fovWidthM(d, deg){ return 2*d*Math.tan((deg*Math.PI)/180/2); }
+function spotM(d, ifov){ return (d*ifov)/1000; }
+function esc(s){
+  return String(s==null?"":s).replace(/[&<>"']/g, function(ch){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch];
+  });
+}
+
+const segG = document.getElementById("segments");
+WHEEL.forEach(function(p,i){
+  const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+  path.setAttribute("d", wedgePath(i));
+  path.setAttribute("class","seg");
+  path.setAttribute("data-id", p.id);
+  path.setAttribute("tabindex","0");
+  path.setAttribute("role","button");
+  path.setAttribute("aria-label", p.label);
+  path.addEventListener("mouseenter", function(){
+    path.classList.add("is-hover");
+    if (!path.classList.contains("is-selected")) path.style.transform = "scale(1.035)";
+  });
+  path.addEventListener("mouseleave", function(){
+    path.classList.remove("is-hover");
+    if (!path.classList.contains("is-selected")) path.style.transform = "scale(1)";
+  });
+  path.addEventListener("click", function(){ selectWheel(p.id); });
+  path.addEventListener("keydown", function(e){
+    if (e.key==="Enter" || e.key===" ") { e.preventDefault(); selectWheel(p.id); }
+  });
+  segG.appendChild(path);
+  const lp = labelPos(i);
+  const t = document.createElementNS("http://www.w3.org/2000/svg","text");
+  t.setAttribute("class","seg-label");
+  t.setAttribute("x", lp[0]); t.setAttribute("y", p.sub ? lp[1]-5 : lp[1]+3);
+  t.textContent = p.label;
+  segG.appendChild(t);
+  if (p.sub) {
+    const s = document.createElementNS("http://www.w3.org/2000/svg","text");
+    s.setAttribute("class","seg-sub");
+    s.setAttribute("x", lp[0]); s.setAttribute("y", lp[1]+8);
+    s.textContent = p.sub;
+    segG.appendChild(s);
+  }
+});
+function selectWheel(id){
+  if (selectedWheel === id) { clearWheel(); return; }
+  selectedWheel = id;
+  document.querySelectorAll(".seg").forEach(function(el){
+    var on = el.getAttribute("data-id") === id;
+    el.classList.toggle("is-selected", on);
+    el.style.transform = on ? "scale(1.05)" : "scale(1)";
+  });
+  var p = WHEEL.find(function(x){ return x.id===id; });
+  document.getElementById("filterNote").textContent = "Filtering · " + (p?p.label:id);
+  render();
+}
+function clearWheel(){
+  selectedWheel = null;
+  document.querySelectorAll(".seg").forEach(function(el){
+    el.classList.remove("is-selected"); el.style.transform="scale(1)";
+  });
+  document.getElementById("filterNote").textContent = "";
+  render();
+}
+document.getElementById("lensHub").addEventListener("click", clearWheel);
+document.getElementById("clearWheel").addEventListener("click", clearWheel);
+
+const appList = document.getElementById("appList");
+RECS.forEach(function(r){
+  var b = document.createElement("button");
+  b.type="button"; b.className="app-btn"; b.dataset.id=r.id;
+  b.textContent = r.label;
+  b.addEventListener("click", function(){
+    selectedApp = (selectedApp === r.id) ? null : r.id;
+    render();
+  });
+  appList.appendChild(b);
+});
+
+document.querySelectorAll(".tab").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    tab = btn.getAttribute("data-tab");
+    document.querySelectorAll(".tab").forEach(function(t){ t.classList.toggle("is-on", t===btn); });
+    render();
+  });
+});
+
+function camCard(c, opts){
+  opts = opts || {};
+  var status = c.status ? '<span class="status-disc">'+esc(c.status)+'</span>' : 'Current / listed';
+  var html = '<div class="card '+(opts.cls||'')+'">';
+  if (opts.tag) html += '<div class="tag">'+esc(opts.tag)+'</div>';
+  html += '<h3>'+esc(c.name)+'</h3>';
+  if (opts.why) html += '<p class="why">'+esc(opts.why)+'</p>';
+  html += '<div class="meta"><strong>'+esc(c.category)+'</strong> · IR '+esc(c.ir)+'<br/>NETD '+esc(c.netd.split(";")[0])+' · '+esc(c.lenses)+'<br/>Temp '+esc(c.tempRange)+'<br/>Status: '+status+' · <a href="'+esc(c.source)+'" target="_blank" rel="noopener">Source</a></div>';
+  if (c.notes) html += '<p class="why" style="margin-top:8px;color:#C63804"><strong>Verify:</strong> '+esc(c.notes)+'</p>';
+  html += '</div>';
+  return html;
+}
+
+function renderRecommend(){
+  var rec = RECS.find(function(r){ return r.id===selectedApp; }) || RECS[0];
+  if (!selectedApp) selectedApp = rec.id;
+  var best = camById(rec.bestId);
+  var runner = camById(rec.runnerId);
+  var suitable = rec.suitableIds.map(camById).filter(function(c){ return wheelMatch(c, selectedWheel); });
+  var bestOk = wheelMatch(best, selectedWheel);
+  var runnerOk = wheelMatch(runner, selectedWheel);
+
+  document.getElementById("sinceCount").textContent = rec.label;
+  document.getElementById("sinceHint").textContent = rec.need;
+  document.getElementById("resultsTitle").textContent = "Results · Recommend";
+
+  var html = '';
+  if (selectedWheel === "fire") {
+    html += '<div class="card warn"><strong>Fire fighting note:</strong> Dedicated FLIR K-Series firefighter cameras are not in this Yellotec sales catalogue. Closest entry here is GF309 (see-through-flame / furnace).</div>';
+  }
+  if (bestOk) html += camCard(best, {cls:"best", tag:"Best choice", why:rec.bestWhy});
+  else html += '<div class="card warn">Best fit ('+esc(best.name)+') is outside the selected wheel category.</div>';
+  if (runnerOk) html += camCard(runner, {cls:"runner", tag:"Runner-up", why:rec.runnerWhy});
+  else if (selectedWheel) html += '<div class="card warn">Runner-up ('+esc(runner.name)+') is outside the selected wheel category.</div>';
+
+  html += '<div class="card"><h3>Others suitable ('+suitable.length+')</h3>';
+  html += '<p class="why">Lens tip: '+esc(rec.lensTip)+'</p>';
+  html += '<table class="spec"><thead><tr><th>Camera</th><th>Series</th><th>IR</th><th>NETD</th><th>Status</th></tr></thead><tbody>';
+  suitable.forEach(function(c){
+    html += '<tr><td>'+esc(c.name)+'</td><td>'+esc(c.category)+'</td><td>'+esc(c.ir)+'</td><td>'+esc(c.netd.split(";")[0])+'</td><td>'+esc(c.status||"Current")+'</td></tr>';
+  });
+  html += '</tbody></table></div>';
+  document.getElementById("results").innerHTML = html;
+}
+
+function renderBrowse(){
+  var cams = filteredCams();
+  if (!cams.length) cams = CAMERAS.filter(function(c){ return wheelMatch(c, selectedWheel); });
+  if (!cams.some(function(c){ return c.id===browseId; })) browseId = cams[0] ? cams[0].id : "e96";
+  var selected = camById(browseId);
+
+  document.getElementById("sinceCount").textContent = cams.length + " camera" + (cams.length===1?"":"s");
+  document.getElementById("sinceHint").textContent = "Browse full published specs. Click a row or use the detail picker.";
+  document.getElementById("resultsTitle").textContent = "Results · Browse";
+
+  var opts = cams.map(function(c){ return '<option value="'+c.id+'"'+(c.id===browseId?' selected':'')+'>'+esc(c.name)+'</option>'; }).join("");
+  var html = '<div class="toolbar"><div><label for="browsePick">Detail card</label><select id="browsePick">'+opts+'</select></div></div>';
+  html += '<table class="spec"><thead><tr><th>Camera</th><th>Series</th><th>IR</th><th>NETD</th><th>Temp</th><th>Lenses</th><th>Status</th></tr></thead><tbody>';
+  cams.forEach(function(c){
+    html += '<tr data-id="'+c.id+'" style="cursor:pointer'+(c.id===browseId?';background:#fff6c2':'')+'"><td>'+esc(c.name)+'</td><td>'+esc(c.category)+'</td><td>'+esc(c.ir)+'</td><td>'+esc(c.netd.split(";")[0])+'</td><td>'+esc(c.tempRange)+'</td><td>'+esc(c.lenses)+'</td><td>'+esc(c.status||"—")+'</td></tr>';
+  });
+  html += '</tbody></table>';
+  html += camCard(selected, {tag:"Detail"});
+  html += '<div class="card"><h3>Verify-before-quoting notes</h3><table class="spec"><thead><tr><th>Item</th><th>Status</th></tr></thead><tbody>';
+  VERIFY.forEach(function(row){ html += '<tr><td>'+esc(row[0])+'</td><td>'+esc(row[1])+'</td></tr>'; });
+  html += '</tbody></table></div>';
+  document.getElementById("results").innerHTML = html;
+  document.getElementById("browsePick").addEventListener("change", function(e){ browseId = e.target.value; render(); });
+  document.querySelectorAll("table.spec tbody tr[data-id]").forEach(function(tr){
+    tr.addEventListener("click", function(){ browseId = tr.getAttribute("data-id"); render(); });
+  });
+}
+
+function renderCompare(){
+  document.getElementById("sinceCount").textContent = "Side-by-side";
+  document.getElementById("sinceHint").textContent = "Pick up to three cameras. Wheel / application filters shrink the pick lists.";
+  document.getElementById("resultsTitle").textContent = "Results · Compare";
+
+  var pool = filteredCams();
+  if (pool.length < 2) pool = CAMERAS.filter(function(c){ return wheelMatch(c, selectedWheel); });
+  if (pool.length < 2) pool = CAMERAS.slice();
+
+  function optHtml(selected){
+    return pool.map(function(c){ return '<option value="'+c.id+'"'+(c.id===selected?' selected':'')+'>'+esc(c.name)+'</option>'; }).join("");
+  }
+  var html = '<div class="toolbar">';
+  html += '<div><label>Camera 1</label><select id="c1">'+optHtml(compareIds[0])+'</select></div>';
+  html += '<div><label>Camera 2</label><select id="c2">'+optHtml(compareIds[1])+'</select></div>';
+  html += '<div><label>Camera 3</label><select id="c3">'+optHtml(compareIds[2]||pool[0].id)+'</select></div>';
+  html += '</div>';
+
+  var picks = [compareIds[0], compareIds[1], compareIds[2]].map(camById);
+  var seen = {};
+  var cams = [];
+  picks.forEach(function(c){ if (c && !seen[c.id]) { seen[c.id]=1; cams.push(c); } });
+
+  var rows = [
+    ["Series", function(c){return c.category;}],
+    ["Status", function(c){return c.status||"Current / listed";}],
+    ["IR / sensing", function(c){return c.ir;}],
+    ["NETD", function(c){return c.netd;}],
+    ["Temp range", function(c){return c.tempRange;}],
+    ["Accuracy", function(c){return c.accuracy;}],
+    ["Spectral", function(c){return c.spectral;}],
+    ["Lenses", function(c){return c.lenses;}],
+    ["IFOV", function(c){return c.ifovNote;}],
+    ["Focus", function(c){return c.focus;}],
+    ["Typical use", function(c){return c.typical;}],
+    ["Source", function(c){return c.source;}]
+  ];
+  html += '<table class="spec"><thead><tr><th>Spec</th>';
+  cams.forEach(function(c){ html += '<th>'+esc(c.name)+'</th>'; });
+  html += '</tr></thead><tbody>';
+  rows.forEach(function(row){
+    html += '<tr><th>'+esc(row[0])+'</th>';
+    cams.forEach(function(c){
+      var v = row[1](c);
+      if (row[0]==="Source") html += '<td><a href="'+esc(v)+'" target="_blank" rel="noopener">Link</a></td>';
+      else html += '<td>'+esc(v)+'</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById("results").innerHTML = html;
+  ["c1","c2","c3"].forEach(function(id, idx){
+    var el = document.getElementById(id);
+    el.value = compareIds[idx] || pool[0].id;
+    el.addEventListener("change", function(){
+      compareIds[idx] = el.value;
+      render();
+    });
+  });
+}
+
+function renderFov(){
+  var pool = CAMERAS.filter(function(c){ return c.lensData && c.lensData.length && wheelMatch(c, selectedWheel); });
+  if (!pool.length) pool = CAMERAS.filter(function(c){ return c.lensData && c.lensData.length; });
+  if (!pool.some(function(c){ return c.id===fovCamId; })) fovCamId = pool[0].id;
+  var cam = camById(fovCamId);
+  var d = Math.max(0.1, Number(fovDist)||SCENES[fovScene].distance);
+  var scene = SCENES[fovScene];
+
+  document.getElementById("sinceCount").textContent = scene.title + " · " + d + " m";
+  document.getElementById("sinceHint").textContent = scene.detail + " Target: " + scene.target;
+  document.getElementById("resultsTitle").textContent = "Results · FOV calculator";
+
+  var html = '<div class="formula">FOV width = <code>2 · d · tan(θ/2)</code> &nbsp;·&nbsp; Spot ≈ <code>d · IFOV(mrad) / 1000</code> &nbsp;·&nbsp; ~3×3 pixels for a reliable reading.</div>';
+  html += '<div class="scene-tabs">';
+  ["panel","ohl","machine"].forEach(function(k){
+    html += '<button type="button" data-scene="'+k+'" class="'+(fovScene===k?'is-on':'')+'">'+esc(SCENES[k].title)+'</button>';
+  });
+  html += '</div>';
+  html += '<div class="toolbar"><div><label>Camera</label><select id="fovCam">';
+  pool.forEach(function(c){ html += '<option value="'+c.id+'"'+(c.id===fovCamId?' selected':'')+'>'+esc(c.name)+'</option>'; });
+  html += '</select></div><div><label>Distance (m)</label><input id="fovDist" type="number" step="0.1" min="0.1" value="'+esc(fovDist)+'"/></div></div>';
+
+  html += '<table class="spec"><thead><tr><th>Lens</th><th>FOV</th><th>IFOV</th><th>FOV width @ '+d+' m</th><th>1-pixel spot</th><th>~3×3 meas.</th></tr></thead><tbody>';
+  cam.lensData.forEach(function(lens){
+    var w = fovWidthM(d, lens.fovH);
+    var s = spotM(d, lens.ifovMrad);
+    html += '<tr><td>'+esc(lens.label)+'</td><td>'+lens.fovH+'° × '+lens.fovV+'°</td><td>'+lens.ifovMrad+' mrad</td><td>'+fmtM(w)+'</td><td>'+fmtMm(s)+'</td><td>'+fmtMm(s*3)+'</td></tr>';
+  });
+  html += '</tbody></table>';
+  if (cam.notes) html += '<div class="card warn"><strong>Verify:</strong> '+esc(cam.notes)+'</div>';
+  html += '<div class="card"><h3>Reading tip</h3><p class="why">At '+d+' m on '+esc(cam.name)+', a wider lens covers more scene but enlarges the spot; telephoto narrows the view and shrinks the spot so small targets stay measurable. Acoustic cameras: coverage cone only — spot size is not meaningful.</p></div>';
+
+  document.getElementById("results").innerHTML = html;
+  document.getElementById("fovCam").addEventListener("change", function(e){ fovCamId = e.target.value; render(); });
+  document.getElementById("fovDist").addEventListener("change", function(e){ fovDist = e.target.value; render(); });
+  document.getElementById("fovDist").addEventListener("keydown", function(e){ if (e.key==="Enter"){ fovDist = e.target.value; render(); }});
+  document.querySelectorAll(".scene-tabs button").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      fovScene = btn.getAttribute("data-scene");
+      fovDist = String(SCENES[fovScene].distance);
+      render();
+    });
+  });
+}
+
+function render(){
+  document.querySelectorAll(".app-btn").forEach(function(b){
+    b.classList.toggle("is-on", b.dataset.id === selectedApp);
+  });
+  if (tab === "recommend") renderRecommend();
+  else if (tab === "browse") renderBrowse();
+  else if (tab === "compare") renderCompare();
+  else renderFov();
+}
+
+render();
+
+</script>
+</body>
+</html>
