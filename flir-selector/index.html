@@ -130,6 +130,44 @@ table.spec tr:nth-child(even) td { background:#fcfcfc; }
   margin:0 0 12px; overflow:hidden;
 }
 .fov-diagram svg { display:block; width:100%; height:auto; max-height:360px; }
+.fov-overlay {
+  background:#111; border:2px solid var(--black); border-radius:10px; padding:12px; margin:12px 0;
+}
+.fov-overlay h3 { margin:0 0 6px; font-size:0.95rem; color:var(--yellow); }
+.fov-overlay .ov-help { margin:0 0 10px; font-size:0.78rem; color:#ccc; line-height:1.4; }
+.fov-overlay .ov-row {
+  display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; margin:0 0 10px;
+}
+.fov-overlay .ov-row label { display:block; font-size:0.72rem; font-weight:700; margin:0 0 3px; }
+.fov-overlay .ov-row input[type="number"],
+.fov-overlay .ov-row input[type="text"] {
+  width:110px; padding:6px 8px; border:1.5px solid var(--black); border-radius:6px;
+  font-family:inherit; font-size:0.85rem; background:#fff;
+}
+.fov-overlay .ov-row input[type="file"] {
+  font-size:0.78rem; color:#eee; max-width:100%;
+}
+.fov-overlay .ov-row button {
+  padding:7px 12px; border:1.5px solid var(--black); border-radius:6px;
+  background:var(--yellow); font-weight:700; font-family:inherit; cursor:pointer; font-size:0.8rem;
+}
+.fov-overlay .ov-row button.ghost {
+  background:#222; color:var(--yellow); border-color:#FFD100;
+}
+.fov-overlay .ov-status {
+  margin:0 0 8px; font-size:0.78rem; color:#FFD100; min-height:1.2em;
+}
+.fov-overlay .ov-status.warn { color:#FF6600; }
+.fov-overlay .ov-stage {
+  position:relative; width:100%; background:#000; border:1.5px solid #333; border-radius:8px;
+  overflow:hidden; touch-action:none; cursor:crosshair; min-height:120px;
+}
+.fov-overlay .ov-stage canvas { display:block; width:100%; height:auto; max-height:480px; }
+.fov-overlay .ov-legend {
+  margin:8px 0 0; font-size:0.72rem; color:#aaa; line-height:1.35;
+}
+.fov-overlay .ov-legend b { color:#FFD100; }
+
 .fov-stats {
   display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin:0 0 12px;
 }
@@ -587,7 +625,23 @@ function renderFov(){
   if (cam.notes) html += '<div class="card warn"><strong>Verify:</strong> '+esc(cam.notes)+'</div>';
   html += '<div class="card"><h3>Scale diagram</h3><p class="why">Yellow frame = FOV at '+d+' m on '+esc(cam.name)+' / '+esc(lens.label)+'. Human silhouette is 1.8 m tall; tree ≈ 6 m (shown when the application typically includes outdoor scale). Spot circle at centre is the theoretical 1-pixel IFOV diameter drawn to the same scale. Acoustic cameras: coverage cone only — spot size is not meaningful.</p></div>';
 
+  html += '<div class="fov-overlay" id="fovOverlay">';
+  html += '<h3>Your photo · FOV overlay</h3>';
+  html += '<p class="ov-help">Upload a site photo (stays in this browser — nothing is uploaded to a server). Draw a line on a known length (door, person, panel width), enter that length in metres, then the yellow FOV frame and orange spot marker scale to your reference using the camera/lens/distance above.</p>';
+  html += '<div class="ov-row">';
+  html += '<div><label>Photo</label><input type="file" id="ovFile" accept="image/*"/></div>';
+  html += '<div><label>Reference length (m)</label><input type="number" id="ovLen" step="0.01" min="0.01" value="'+(ovState.lenM||2)+'"/></div>';
+  html += '<div><button type="button" id="ovRedraw">Redraw scale line</button></div>';
+  html += '<div><button type="button" class="ghost" id="ovClear">Clear photo</button></div>';
+  html += '</div>';
+  html += '<p class="ov-status" id="ovStatus"></p>';
+  html += '<div class="ov-stage" id="ovStage"><canvas id="ovCanvas" width="720" height="200"></canvas></div>';
+  html += '<p class="ov-legend"><b>Yellow</b> = FOV outline at selected distance · <b>Orange</b> = 1-pixel spot (dashed = ~3×3 measurable) · Drag on the photo to set the reference line · Scale = line pixels ÷ length (m)</p>';
+  html += '</div>';
+
   document.getElementById("results").innerHTML = html;
+  mountFovOverlay(d, wH, wV, spot, cam, lens);
+
   document.getElementById("fovCam").addEventListener("change", function(e){ fovCamId = e.target.value; fovLensIdx = 0; render(); });
   document.getElementById("fovLens").addEventListener("change", function(e){ fovLensIdx = Number(e.target.value)||0; render(); });
   document.getElementById("fovDist").addEventListener("change", function(e){ fovDist = e.target.value; render(); });
@@ -600,6 +654,283 @@ function renderFov(){
     });
   });
 }
+
+
+/* ---- FOV photo overlay (client-side only) ---- */
+var ovState = {
+  dataUrl: null,
+  img: null,
+  natW: 0,
+  natH: 0,
+  x1: null, y1: null, x2: null, y2: null,
+  dragging: false,
+  lenM: 2,
+  mode: "idle" // idle | draw | ready
+};
+
+function ovPxPerM(){
+  if (ovState.x1 == null || ovState.x2 == null) return null;
+  var lenM = Math.max(0.01, Number(ovState.lenM) || 0);
+  if (!lenM) return null;
+  var dx = ovState.x2 - ovState.x1, dy = ovState.y2 - ovState.y1;
+  var px = Math.sqrt(dx*dx + dy*dy);
+  if (px < 2) return null;
+  return px / lenM;
+}
+
+function ovSetStatus(msg, warn){
+  var el = document.getElementById("ovStatus");
+  if (!el) return;
+  el.textContent = msg || "";
+  el.className = "ov-status" + (warn ? " warn" : "");
+}
+
+function ovCanvasMetrics(canvas){
+  var rect = canvas.getBoundingClientRect();
+  var cssW = rect.width || canvas.width;
+  var cssH = rect.height || canvas.height;
+  return { rect: rect, cssW: cssW, cssH: cssH, sx: canvas.width / cssW, sy: canvas.height / cssH };
+}
+
+function ovEventToImg(canvas, evt){
+  var m = ovCanvasMetrics(canvas);
+  var cx = (evt.clientX - m.rect.left) * m.sx;
+  var cy = (evt.clientY - m.rect.top) * m.sy;
+  // canvas is letterboxed image
+  var fit = ovFit(canvas.width, canvas.height, ovState.natW, ovState.natH);
+  var ix = (cx - fit.ox) / fit.scale;
+  var iy = (cy - fit.oy) / fit.scale;
+  ix = Math.max(0, Math.min(ovState.natW, ix));
+  iy = Math.max(0, Math.min(ovState.natH, iy));
+  return { x: ix, y: iy };
+}
+
+function ovFit(cw, ch, iw, ih){
+  var scale = Math.min(cw / iw, ch / ih);
+  var dw = iw * scale, dh = ih * scale;
+  return { scale: scale, ox: (cw - dw) / 2, oy: (ch - dh) / 2, dw: dw, dh: dh };
+}
+
+function ovDraw(d, wH, wV, spot, cam, lens){
+  var canvas = document.getElementById("ovCanvas");
+  if (!canvas || !ovState.img) return;
+  var stage = document.getElementById("ovStage");
+  var maxW = (stage && stage.clientWidth) ? stage.clientWidth : 720;
+  maxW = Math.max(280, Math.min(960, maxW));
+  var aspect = ovState.natH / ovState.natW;
+  var cw = Math.round(maxW);
+  var ch = Math.round(Math.min(480, Math.max(160, cw * aspect)));
+  if (canvas.width !== cw || canvas.height !== ch) {
+    canvas.width = cw;
+    canvas.height = ch;
+  }
+  var ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, cw, ch);
+  var fit = ovFit(cw, ch, ovState.natW, ovState.natH);
+  ctx.drawImage(ovState.img, fit.ox, fit.oy, fit.dw, fit.dh);
+
+  function toC(x, y){
+    return { x: fit.ox + x * fit.scale, y: fit.oy + y * fit.scale };
+  }
+
+  // reference line
+  if (ovState.x1 != null && ovState.y1 != null) {
+    var a = toC(ovState.x1, ovState.y1);
+    var b = toC(ovState.x2 != null ? ovState.x2 : ovState.x1, ovState.y2 != null ? ovState.y2 : ovState.y1);
+    ctx.strokeStyle = "#FFD100";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+    ctx.fillStyle = "#FFD100";
+    ctx.beginPath(); ctx.arc(a.x, a.y, 4, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill();
+    ctx.font = "bold 12px Arial,sans-serif";
+    ctx.fillText((ovState.lenM || "?") + " m ref", (a.x+b.x)/2 + 6, (a.y+b.y)/2 - 6);
+  }
+
+  var ppm = ovPxPerM();
+  if (ppm) {
+    // FOV frame centred on image
+    var cx = ovState.natW / 2, cy = ovState.natH / 2;
+    var fw = wH * ppm, fh = wV * ppm;
+    var tl = toC(cx - fw/2, cy - fh/2);
+    var br = toC(cx + fw/2, cy + fh/2);
+    ctx.strokeStyle = "#FFD100";
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([]);
+    ctx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
+    // spot at centre
+    var spotR = Math.max(1.5, (spot * ppm * fit.scale) / 2);
+    var measR = Math.max(spotR * 3, 4);
+    var c = toC(cx, cy);
+    ctx.strokeStyle = "#FF6600";
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.arc(c.x, c.y, measR, 0, Math.PI*2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#FF6600";
+    ctx.beginPath(); ctx.arc(c.x, c.y, spotR, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = "#FFD100";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.fillStyle = "#FFD100";
+    ctx.font = "bold 12px Arial,sans-serif";
+    var labelY = Math.max(16, tl.y - 8);
+    ctx.fillText("HFOV " + fmtM(wH) + " × VFOV " + fmtM(wV) + " @ " + d + " m", tl.x, labelY);
+    ctx.fillStyle = "#FF6600";
+    ctx.fillText("spot " + fmtMm(spot) + "  (~3×3 " + fmtMm(spot*3) + ")", c.x + measR + 6, c.y - 4);
+
+    var fovFits = (fw <= ovState.natW * 1.02) && (fh <= ovState.natH * 1.02);
+    var msg = cam.name + " · " + lens.label + " · " + ppm.toFixed(1) + " px/m";
+    if (!fovFits) msg += " — FOV larger than photo at this scale (frame clipped/extends past edges)";
+    ovSetStatus(msg, !fovFits);
+  } else if (ovState.img) {
+    ovSetStatus("Draw a line across a known length, then enter that length in metres.", false);
+  }
+}
+
+function mountFovOverlay(d, wH, wV, spot, cam, lens){
+  var file = document.getElementById("ovFile");
+  var lenIn = document.getElementById("ovLen");
+  var canvas = document.getElementById("ovCanvas");
+  var btnClear = document.getElementById("ovClear");
+  var btnRedraw = document.getElementById("ovRedraw");
+  if (!file || !canvas) return;
+
+  if (lenIn) {
+    lenIn.value = String(ovState.lenM || 2);
+    lenIn.oninput = function(){
+      ovState.lenM = Math.max(0.01, Number(lenIn.value) || 0);
+      ovDraw(d, wH, wV, spot, cam, lens);
+    };
+  }
+
+  file.onchange = function(){
+    var f = file.files && file.files[0];
+    if (!f) return;
+    if (!/^image\//.test(f.type)) {
+      ovSetStatus("Please choose an image file (JPG, PNG, WebP, etc.).", true);
+      return;
+    }
+    if (f.size > 25 * 1024 * 1024) {
+      ovSetStatus("Image is larger than 25 MB — try a smaller file.", true);
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      var url = ev.target.result;
+      var img = new Image();
+      img.onload = function(){
+        ovState.dataUrl = url;
+        ovState.img = img;
+        ovState.natW = img.naturalWidth || img.width;
+        ovState.natH = img.naturalHeight || img.height;
+        ovState.x1 = ovState.y1 = ovState.x2 = ovState.y2 = null;
+        ovState.dragging = false;
+        ovState.mode = "draw";
+        ovSetStatus("Image loaded (" + ovState.natW + "×" + ovState.natH + "). Drag to mark a known length.", false);
+        ovDraw(d, wH, wV, spot, cam, lens);
+      };
+      img.onerror = function(){ ovSetStatus("Could not decode that image.", true); };
+      img.src = url;
+    };
+    reader.onerror = function(){ ovSetStatus("Could not read that file.", true); };
+    reader.readAsDataURL(f);
+  };
+
+  if (btnClear) btnClear.onclick = function(){
+    ovState.dataUrl = null;
+    ovState.img = null;
+    ovState.natW = ovState.natH = 0;
+    ovState.x1 = ovState.y1 = ovState.x2 = ovState.y2 = null;
+    ovState.dragging = false;
+    ovState.mode = "idle";
+    file.value = "";
+    var ctx = canvas.getContext("2d");
+    canvas.width = 720; canvas.height = 160;
+    ctx.fillStyle = "#111";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#666";
+    ctx.font = "14px Arial,sans-serif";
+    ctx.fillText("Upload a photo to begin", 24, 84);
+    ovSetStatus("", false);
+  };
+
+  if (btnRedraw) btnRedraw.onclick = function(){
+    ovState.x1 = ovState.y1 = ovState.x2 = ovState.y2 = null;
+    ovState.dragging = false;
+    ovState.mode = ovState.img ? "draw" : "idle";
+    ovDraw(d, wH, wV, spot, cam, lens);
+    ovSetStatus(ovState.img ? "Drag on the photo to set a new reference line." : "Upload a photo first.", !ovState.img);
+  };
+
+  function onDown(evt){
+    if (!ovState.img) return;
+    evt.preventDefault();
+    var p = ovEventToImg(canvas, evt.touches ? evt.touches[0] : evt);
+    ovState.dragging = true;
+    ovState.x1 = p.x; ovState.y1 = p.y;
+    ovState.x2 = p.x; ovState.y2 = p.y;
+    ovDraw(d, wH, wV, spot, cam, lens);
+  }
+  function onMove(evt){
+    if (!ovState.dragging) return;
+    evt.preventDefault();
+    var src = evt.touches ? evt.touches[0] : evt;
+    var p = ovEventToImg(canvas, src);
+    ovState.x2 = p.x; ovState.y2 = p.y;
+    ovDraw(d, wH, wV, spot, cam, lens);
+  }
+  function onUp(evt){
+    if (!ovState.dragging) return;
+    ovState.dragging = false;
+    if (evt && (evt.changedTouches || evt.type.indexOf("pointer")===0 || evt.type==="mouseup")) {
+      var src = evt.changedTouches ? evt.changedTouches[0] : evt;
+      if (src.clientX != null) {
+        var p = ovEventToImg(canvas, src);
+        ovState.x2 = p.x; ovState.y2 = p.y;
+      }
+    }
+    ovState.mode = "ready";
+    ovDraw(d, wH, wV, spot, cam, lens);
+  }
+
+  canvas.onmousedown = onDown;
+  canvas.onmousemove = onMove;
+  canvas.onmouseup = onUp;
+  canvas.onmouseleave = function(){ if (ovState.dragging) onUp(); };
+  canvas.ontouchstart = onDown;
+  canvas.ontouchmove = onMove;
+  canvas.ontouchend = onUp;
+
+  // restore previous image after FOV re-render
+  if (ovState.dataUrl && (!ovState.img || !ovState.img.complete)) {
+    var img = new Image();
+    img.onload = function(){
+      ovState.img = img;
+      ovState.natW = img.naturalWidth || img.width;
+      ovState.natH = img.naturalHeight || img.height;
+      ovDraw(d, wH, wV, spot, cam, lens);
+    };
+    img.src = ovState.dataUrl;
+  } else if (ovState.img) {
+    ovDraw(d, wH, wV, spot, cam, lens);
+  } else {
+    var ctx = canvas.getContext("2d");
+    canvas.width = 720; canvas.height = 160;
+    ctx.fillStyle = "#111";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#666";
+    ctx.font = "14px Arial,sans-serif";
+    ctx.fillText("Upload a photo to begin", 24, 84);
+  }
+}
+
 
 function buildFovSvg(d, wH, wV, spot, scene, camName, lens){
   var W = 720, H = 400;
