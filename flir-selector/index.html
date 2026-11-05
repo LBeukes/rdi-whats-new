@@ -341,14 +341,14 @@ function filteredCams(){
   });
 }
 function fmtMm(m){
-  if (m < 0.01) return (m*1000).toFixed(1)+" mm";
-  if (m < 1) return (m*1000).toFixed(0)+" mm";
-  return m.toFixed(2)+" m";
+  var mm = m * 1000;
+  var mmStr;
+  if (mm < 10) mmStr = mm.toFixed(1) + " mm";
+  else mmStr = (Math.round(mm) === mm ? mm.toFixed(0) : mm.toFixed(1)) + " mm";
+  if (m >= 1) return mmStr + " (" + m.toFixed(2) + " m)";
+  return mmStr;
 }
-function fmtM(m){
-  if (m < 1) return (m*1000).toFixed(0)+" mm";
-  return m.toFixed(2)+" m";
-}
+function fmtM(m){ return fmtMm(m); }
 function fovWidthM(d, deg){ return 2*d*Math.tan((deg*Math.PI)/180/2); }
 function spotM(d, ifov){ return (d*ifov)/1000; }
 function esc(s){
@@ -627,16 +627,16 @@ function renderFov(){
 
   html += '<div class="fov-overlay" id="fovOverlay">';
   html += '<h3>Your photo · FOV overlay</h3>';
-  html += '<p class="ov-help">Upload a site photo (stays in this browser — nothing is uploaded to a server). Draw a line on a known length (door, person, panel width), enter that length in metres, then the yellow FOV frame and orange spot marker scale to your reference using the camera/lens/distance above.</p>';
+  html += '<p class="ov-help">Upload a site photo (stays in this browser — nothing is uploaded to a server). Draw a line on a known length (door, person, panel width), enter that length in millimetres (e.g. 1000 mm), then the yellow FOV frame and orange spot circle scale to your reference using the camera/lens/distance above.</p>';
   html += '<div class="ov-row">';
   html += '<div><label>Photo</label><input type="file" id="ovFile" accept="image/*"/></div>';
-  html += '<div><label>Reference length (m)</label><input type="number" id="ovLen" step="0.01" min="0.01" value="'+(ovState.lenM||2)+'"/></div>';
+  html += '<div><label>Reference length (mm)</label><input type="number" id="ovLen" step="1" min="1" placeholder="1000" value="'+(ovState.lenMm||1000)+'"/></div>';
   html += '<div><button type="button" id="ovRedraw">Redraw scale line</button></div>';
   html += '<div><button type="button" class="ghost" id="ovClear">Clear photo</button></div>';
   html += '</div>';
   html += '<p class="ov-status" id="ovStatus"></p>';
   html += '<div class="ov-stage" id="ovStage"><canvas id="ovCanvas" width="720" height="200"></canvas></div>';
-  html += '<p class="ov-legend"><b>Yellow</b> = FOV outline at selected distance · <b>Orange</b> = 1-pixel spot (dashed = ~3×3 measurable) · Drag on the photo to set the reference line · Scale = line pixels ÷ length (m)</p>';
+  html += '<p class="ov-legend"><b>Yellow</b> = FOV outline · <b>Orange circle</b> = 1-pixel spot ⌀ at true scale (leader label when tiny; dashed = ~3×3 measurable) · Drag to set reference · Scale = line px ÷ (mm÷1000)</p>';
   html += '</div>';
 
   document.getElementById("results").innerHTML = html;
@@ -664,14 +664,15 @@ var ovState = {
   natH: 0,
   x1: null, y1: null, x2: null, y2: null,
   dragging: false,
-  lenM: 2,
+  lenMm: 1000,
   mode: "idle" // idle | draw | ready
 };
 
 function ovPxPerM(){
   if (ovState.x1 == null || ovState.x2 == null) return null;
-  var lenM = Math.max(0.01, Number(ovState.lenM) || 0);
-  if (!lenM) return null;
+  var lenMm = Math.max(1, Number(ovState.lenMm) || 0);
+  if (!lenMm) return null;
+  var lenM = lenMm / 1000;
   var dx = ovState.x2 - ovState.x1, dy = ovState.y2 - ovState.y1;
   var px = Math.sqrt(dx*dx + dy*dy);
   if (px < 2) return null;
@@ -749,7 +750,7 @@ function ovDraw(d, wH, wV, spot, cam, lens){
     ctx.beginPath(); ctx.arc(a.x, a.y, 4, 0, Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill();
     ctx.font = "bold 12px Arial,sans-serif";
-    ctx.fillText((ovState.lenM || "?") + " m ref", (a.x+b.x)/2 + 6, (a.y+b.y)/2 - 6);
+    ctx.fillText((ovState.lenMm || "?") + " mm ref", (a.x+b.x)/2 + 6, (a.y+b.y)/2 - 6);
   }
 
   var ppm = ovPxPerM();
@@ -763,34 +764,59 @@ function ovDraw(d, wH, wV, spot, cam, lens){
     ctx.lineWidth = 2.5;
     ctx.setLineDash([]);
     ctx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
-    // spot at centre
-    var spotR = Math.max(1.5, (spot * ppm * fit.scale) / 2);
-    var measR = Math.max(spotR * 3, 4);
+    // spot at centre — true-scale diameter (spot metres × ppm × canvas scale)
+    var spotDiamPx = spot * ppm * fit.scale; // diameter in canvas px
+    var spotR = spotDiamPx / 2;
+    var measR = (spot * 3 * ppm * fit.scale) / 2; // ~3×3 measurable, also true scale
     var c = toC(cx, cy);
+    // dashed 3×3 circle (true scale; may be tiny)
+    if (measR > 0.25) {
+      ctx.strokeStyle = "#FF6600";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.arc(c.x, c.y, measR, 0, Math.PI*2); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    // 1-pixel spot circle — true scale (no min clamp); thin orange outline for visibility
     ctx.strokeStyle = "#FF6600";
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([4, 3]);
-    ctx.beginPath(); ctx.arc(c.x, c.y, measR, 0, Math.PI*2); ctx.stroke();
+    ctx.lineWidth = spotR < 2 ? 1.25 : 1.5;
     ctx.setLineDash([]);
-    ctx.fillStyle = "#FF6600";
-    ctx.beginPath(); ctx.arc(c.x, c.y, spotR, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = "#FFD100";
+    ctx.beginPath(); ctx.arc(c.x, c.y, Math.max(spotR, 0.15), 0, Math.PI*2); ctx.stroke();
+    if (spotR >= 1.2) {
+      ctx.fillStyle = "rgba(255,102,0,0.35)";
+      ctx.beginPath(); ctx.arc(c.x, c.y, spotR, 0, Math.PI*2); ctx.fill();
+    }
+    // centre tick so tiny spots stay findable without lying about size
+    ctx.strokeStyle = "#FF6600";
     ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(c.x - 4, c.y); ctx.lineTo(c.x + 4, c.y);
+    ctx.moveTo(c.x, c.y - 4); ctx.lineTo(c.x, c.y + 4);
     ctx.stroke();
+    // leader label with true diameter
+    var leadX = c.x + Math.max(spotR, measR, 6) + 10;
+    var leadY = c.y - 10;
+    ctx.beginPath();
+    ctx.moveTo(c.x + Math.max(spotR, 0.5), c.y);
+    ctx.lineTo(leadX - 4, leadY);
+    ctx.stroke();
+    ctx.fillStyle = "#FF6600";
+    ctx.font = "bold 12px Arial,sans-serif";
+    ctx.fillText("spot ⌀ " + fmtMm(spot), leadX, leadY + 4);
+    ctx.font = "11px Arial,sans-serif";
+    ctx.fillText("~3×3 " + fmtMm(spot*3), leadX, leadY + 18);
 
     ctx.fillStyle = "#FFD100";
     ctx.font = "bold 12px Arial,sans-serif";
     var labelY = Math.max(16, tl.y - 8);
     ctx.fillText("HFOV " + fmtM(wH) + " × VFOV " + fmtM(wV) + " @ " + d + " m", tl.x, labelY);
-    ctx.fillStyle = "#FF6600";
-    ctx.fillText("spot " + fmtMm(spot) + "  (~3×3 " + fmtMm(spot*3) + ")", c.x + measR + 6, c.y - 4);
 
     var fovFits = (fw <= ovState.natW * 1.02) && (fh <= ovState.natH * 1.02);
     var msg = cam.name + " · " + lens.label + " · " + ppm.toFixed(1) + " px/m";
     if (!fovFits) msg += " — FOV larger than photo at this scale (frame clipped/extends past edges)";
     ovSetStatus(msg, !fovFits);
   } else if (ovState.img) {
-    ovSetStatus("Draw a line across a known length, then enter that length in metres.", false);
+    ovSetStatus("Draw a line across a known length, then enter that length in millimetres.", false);
   }
 }
 
@@ -803,9 +829,9 @@ function mountFovOverlay(d, wH, wV, spot, cam, lens){
   if (!file || !canvas) return;
 
   if (lenIn) {
-    lenIn.value = String(ovState.lenM || 2);
+    lenIn.value = String(ovState.lenMm || 1000);
     lenIn.oninput = function(){
-      ovState.lenM = Math.max(0.01, Number(lenIn.value) || 0);
+      ovState.lenMm = Math.max(1, Number(lenIn.value) || 0);
       ovDraw(d, wH, wV, spot, cam, lens);
     };
   }
@@ -1001,12 +1027,22 @@ function buildFovSvg(d, wH, wV, spot, scene, camName, lens){
     s.push('<text x="'+(tx+tW/2).toFixed(1)+'" y="'+(gY+14).toFixed(1)+'" text-anchor="middle" fill="#FFD100" font-family="Arial,sans-serif" font-size="10">≈6 m tree</text>');
   }
 
-  var spotR = Math.max(1.5, (spot * scale) / 2);
-  var measR = Math.max(spotR*3, 4);
-  s.push('<circle cx="'+cx.toFixed(1)+'" cy="'+(ry+rectH/2).toFixed(1)+'" r="'+measR.toFixed(1)+'" fill="none" stroke="#FF6600" stroke-width="1.2" stroke-dasharray="3 3"/>');
-  s.push('<circle cx="'+cx.toFixed(1)+'" cy="'+(ry+rectH/2).toFixed(1)+'" r="'+spotR.toFixed(1)+'" fill="#FF6600" stroke="#FFD100" stroke-width="1"/>');
-  s.push('<text x="'+(cx+measR+8).toFixed(1)+'" y="'+(ry+rectH/2-4).toFixed(1)+'" fill="#FF6600" font-family="Arial,sans-serif" font-size="11" font-weight="700">spot '+fmtMm(spot)+'</text>');
-  s.push('<text x="'+(cx+measR+8).toFixed(1)+'" y="'+(ry+rectH/2+10).toFixed(1)+'" fill="#FF6600" font-family="Arial,sans-serif" font-size="10">~3×3 '+fmtMm(spot*3)+'</text>');
+  // True-scale spot diameter (metres × px/m); no min-radius clamp
+  var spotR = (spot * scale) / 2;
+  var measR = (spot * 3 * scale) / 2;
+  var scy = ry + rectH/2;
+  var spotRDraw = Math.max(spotR, 0.15);
+  if (measR > 0.25) {
+    s.push('<circle cx="'+cx.toFixed(1)+'" cy="'+scy.toFixed(1)+'" r="'+measR.toFixed(2)+'" fill="none" stroke="#FF6600" stroke-width="1" stroke-dasharray="3 3"/>');
+  }
+  s.push('<circle cx="'+cx.toFixed(1)+'" cy="'+scy.toFixed(1)+'" r="'+spotRDraw.toFixed(2)+'" fill="'+(spotR >= 1.2 ? 'rgba(255,102,0,0.35)' : 'none')+'" stroke="#FF6600" stroke-width="'+(spotR < 2 ? '1.25' : '1.5')+'"/>');
+  s.push('<line x1="'+(cx-4).toFixed(1)+'" y1="'+scy.toFixed(1)+'" x2="'+(cx+4).toFixed(1)+'" y2="'+scy.toFixed(1)+'" stroke="#FF6600" stroke-width="1"/>');
+  s.push('<line x1="'+cx.toFixed(1)+'" y1="'+(scy-4).toFixed(1)+'" x2="'+cx.toFixed(1)+'" y2="'+(scy+4).toFixed(1)+'" stroke="#FF6600" stroke-width="1"/>');
+  var leadX = cx + Math.max(spotR, measR, 6) + 10;
+  var leadY = scy - 10;
+  s.push('<line x1="'+(cx + Math.max(spotR, 0.5)).toFixed(1)+'" y1="'+scy.toFixed(1)+'" x2="'+(leadX-4).toFixed(1)+'" y2="'+leadY.toFixed(1)+'" stroke="#FF6600" stroke-width="1"/>');
+  s.push('<text x="'+leadX.toFixed(1)+'" y="'+(leadY+4).toFixed(1)+'" fill="#FF6600" font-family="Arial,sans-serif" font-size="11" font-weight="700">spot ⌀ '+fmtMm(spot)+'</text>');
+  s.push('<text x="'+leadX.toFixed(1)+'" y="'+(leadY+18).toFixed(1)+'" fill="#FF6600" font-family="Arial,sans-serif" font-size="10">~3×3 '+fmtMm(spot*3)+'</text>');
 
   s.push('<text x="'+cx.toFixed(1)+'" y="'+(H-12).toFixed(1)+'" text-anchor="middle" fill="#aaa" font-family="Arial,sans-serif" font-size="11">DFOV '+fmtM(Math.sqrt(wH*wH+wV*wV))+' · scale: 1 m = '+scale.toFixed(1)+' px · yellow = FOV frame</text>');
   s.push('</svg>');
