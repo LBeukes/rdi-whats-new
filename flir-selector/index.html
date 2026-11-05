@@ -174,6 +174,46 @@ table.spec tr:nth-child(even) td { background:#fcfcfc; }
   margin:8px 0 0; font-size:0.72rem; color:#aaa; line-height:1.35;
 }
 .fov-overlay .ov-legend b { color:#FFD100; }
+.fov-overlay .ov-fs-bar {
+  display:none; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+  margin:0 0 8px; padding:8px 10px; background:#1a1a1a; border:1.5px solid #FFD100; border-radius:8px;
+}
+.fov-overlay .ov-fs-bar .ov-fs-readout {
+  font-size:0.8rem; color:#FFD100; font-weight:700; flex:1 1 auto; min-width:140px;
+}
+.fov-overlay .ov-fs-bar button {
+  padding:7px 12px; border:1.5px solid var(--black); border-radius:6px;
+  background:var(--yellow); font-weight:700; font-family:inherit; cursor:pointer; font-size:0.8rem;
+}
+.fov-overlay:fullscreen,
+.fov-overlay:-webkit-full-screen,
+.fov-overlay.is-fs-fake {
+  box-sizing:border-box; width:100%; height:100%; max-width:none; margin:0; border-radius:0; border:none;
+  padding:10px 12px; background:#111; display:flex; flex-direction:column; overflow:auto;
+}
+.fov-overlay.is-fs-fake {
+  position:fixed; inset:0; width:100vw; height:100vh; z-index:100000;
+}
+.fov-overlay:fullscreen .ov-fs-bar,
+.fov-overlay:-webkit-full-screen .ov-fs-bar,
+.fov-overlay.is-fs-fake .ov-fs-bar { display:flex; }
+.fov-overlay:fullscreen .ov-hide-fs,
+.fov-overlay:-webkit-full-screen .ov-hide-fs,
+.fov-overlay.is-fs-fake .ov-hide-fs { display:none !important; }
+.fov-overlay:fullscreen .ov-stage,
+.fov-overlay:-webkit-full-screen .ov-stage,
+.fov-overlay.is-fs-fake .ov-stage {
+  flex:1 1 auto; min-height:0; height:auto; display:flex; align-items:center; justify-content:center;
+  border-radius:0;
+}
+.fov-overlay:fullscreen .ov-stage canvas,
+.fov-overlay:-webkit-full-screen .ov-stage canvas,
+.fov-overlay.is-fs-fake .ov-stage canvas {
+  width:auto; height:auto; max-width:100%; max-height:100%;
+}
+.fov-overlay:fullscreen h3,
+.fov-overlay:-webkit-full-screen h3,
+.fov-overlay.is-fs-fake h3 { font-size:1rem; }
 
 .fov-stats {
   display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin:0 0 12px;
@@ -644,13 +684,15 @@ function renderFov(){
   html += '<div class="card"><h3>Scale diagram</h3><p class="why">Yellow frame = FOV at '+d+' m on '+esc(cam.name)+' / '+esc(lens.label)+'. Human silhouette is 1.8 m tall; tree ≈ 6 m (shown when the application typically includes outdoor scale). Orange circle = <b>MFOV</b> (≈ '+mfovFac+' × IFOV) at true scale — the smallest target measured accurately. IFOV (1-pixel) is shown as a secondary readout. Acoustic cameras: coverage cone only — spot/MFOV is not meaningful.</p></div>';
 
   html += '<div class="fov-overlay'+(ovState.uiMode==="move"?" mode-move":"")+'" id="fovOverlay">';
+  html += '<div class="ov-fs-bar" id="ovFsBar"><span class="ov-fs-readout" id="ovFsReadout"></span><button type="button" id="ovFsExit">Exit full screen</button></div>';
   html += '<h3>Your photo · FOV / MFOV overlay</h3>';
-  html += '<p class="ov-help">Upload a site photo (stays in this browser — nothing is uploaded to a server). Draw a reference line on a known length (mm), then the yellow FOV frame and orange <b>MFOV</b> circle scale to that reference. Use <b>Move overlay</b> to drag the frame and MFOV independently (MFOV stays inside the FOV).</p>';
+  html += '<p class="ov-help ov-hide-fs">Upload a site photo (stays in this browser — nothing is uploaded to a server). Draw a reference line on a known length (mm), then the yellow FOV frame and orange <b>MFOV</b> circle scale to that reference. Use <b>Move overlay</b> to drag the frame and MFOV independently (MFOV stays inside the FOV).</p>';
   html += '<div class="ov-row">';
-  html += '<div><label>Photo</label><input type="file" id="ovFile" accept="image/*"/></div>';
+  html += '<div class="ov-hide-fs"><label>Photo</label><input type="file" id="ovFile" accept="image/*"/></div>';
   html += '<div><label>Reference length (mm)</label><input type="number" id="ovLen" step="1" min="1" placeholder="1000" value="'+(ovState.lenMm||1000)+'"/></div>';
-  html += '<div><button type="button" id="ovRedraw">Clear reference line</button></div>';
-  html += '<div><button type="button" class="ghost" id="ovClear">Clear photo</button></div>';
+  html += '<div class="ov-hide-fs"><button type="button" id="ovRedraw">Clear reference line</button></div>';
+  html += '<div class="ov-hide-fs"><button type="button" class="ghost" id="ovClear">Clear photo</button></div>';
+  html += '<div><button type="button" id="ovFullScreen">Full screen</button></div>';
   html += '</div>';
   html += '<div class="ov-modes ov-row">';
   html += '<div><label>Mode</label><div style="display:flex;gap:6px;flex-wrap:wrap">';
@@ -658,11 +700,11 @@ function renderFov(){
   html += '<button type="button" id="ovModeMove" class="mode'+(ovState.uiMode==="move"?" active":"")+'">Move overlay</button>';
   html += '<button type="button" id="ovRecentre" class="ghost">Re-centre</button>';
   html += '</div></div>';
-  html += '<span class="mode-hint" id="ovModeHint"></span>';
+  html += '<span class="mode-hint ov-hide-fs" id="ovModeHint"></span>';
   html += '</div>';
   html += '<p class="ov-status" id="ovStatus"></p>';
   html += '<div class="ov-stage" id="ovStage"><canvas id="ovCanvas" width="720" height="200"></canvas></div>';
-  html += '<p class="ov-legend"><b>Yellow</b> = FOV frame (draggable in Move mode) · <b>Orange</b> = MFOV ⌀ at true scale (≈ '+mfovFac+' × IFOV; drag inside FOV) · Scale = line px ÷ (mm÷1000)</p>';
+  html += '<p class="ov-legend ov-hide-fs"><b>Yellow</b> = FOV frame (draggable in Move mode) · <b>Orange</b> = MFOV ⌀ at true scale (≈ '+mfovFac+' × IFOV; drag inside FOV) · Scale = line px ÷ (mm÷1000)</p>';
   html += '</div>';
 
   document.getElementById("results").innerHTML = html;
@@ -696,7 +738,9 @@ var ovState = {
   fovCx: null, fovCy: null, // image px; null = image centre
   spotCx: null, spotCy: null, // image px; null = FOV centre
   lastPtr: null,
-  ptrId: null
+  ptrId: null,
+  fsFake: false,
+  drawArgs: null
 };
 
 function ovPxPerM(){
@@ -734,6 +778,107 @@ function ovUpdateModeUi(){
       : "Draw mode: drag on the photo to set a known-length reference line.";
   }
 }
+
+function ovFsNativeEl(){
+  return document.fullscreenElement || document.webkitFullscreenElement || null;
+}
+function ovIsFs(){
+  var root = document.getElementById("fovOverlay");
+  if (!root) return false;
+  if (ovState.fsFake || root.classList.contains("is-fs-fake")) return true;
+  var fs = ovFsNativeEl();
+  return !!fs && fs === root;
+}
+function ovUpdateFsReadout(d, cam, lens){
+  var el = document.getElementById("ovFsReadout");
+  if (!el) return;
+  var name = cam && cam.name ? cam.name : "—";
+  var lab = lens && lens.label ? lens.label : "—";
+  el.textContent = name + " · " + lab + " · d = " + d + " m";
+}
+function ovRedrawFromArgs(){
+  var a = ovState.drawArgs;
+  if (!a) return;
+  ovDraw(a.d, a.wH, a.wV, a.spot, a.mfov, a.cam, a.lens);
+}
+function ovOnFsChange(){
+  var root = document.getElementById("fovOverlay");
+  var btn = document.getElementById("ovFullScreen");
+  var native = ovFsNativeEl();
+  if (root && native && native !== root && ovState.fsFake) {
+    // another element took FS — ignore
+  }
+  if (!native && ovState.fsFake) {
+    // still in fake FS
+  } else if (!native && !ovState.fsFake && root) {
+    root.classList.remove("is-fs-fake");
+  }
+  if (btn) btn.textContent = ovIsFs() ? "Exit full screen" : "Full screen";
+  // allow layout to settle then redraw at new size
+  setTimeout(ovRedrawFromArgs, 50);
+}
+function ovEnterFsFake(){
+  var root = document.getElementById("fovOverlay");
+  if (!root) return;
+  ovState.fsFake = true;
+  root.classList.add("is-fs-fake");
+  document.documentElement.style.overflow = "hidden";
+  document.body.style.overflow = "hidden";
+  ovOnFsChange();
+}
+function ovExitFsFake(){
+  var root = document.getElementById("fovOverlay");
+  ovState.fsFake = false;
+  if (root) root.classList.remove("is-fs-fake");
+  document.documentElement.style.overflow = "";
+  document.body.style.overflow = "";
+  ovOnFsChange();
+}
+function ovEnterFs(){
+  var root = document.getElementById("fovOverlay");
+  if (!root) return;
+  if (ovIsFs()) return;
+  var req = root.requestFullscreen || root.webkitRequestFullscreen || root.webkitRequestFullScreen;
+  if (typeof req === "function") {
+    try {
+      var ret = req.call(root);
+      if (ret && typeof ret.then === "function") {
+        ret.then(function(){ ovOnFsChange(); }).catch(function(){ ovEnterFsFake(); });
+      } else {
+        setTimeout(ovOnFsChange, 50);
+      }
+    } catch (err) {
+      ovEnterFsFake();
+    }
+  } else {
+    ovEnterFsFake();
+  }
+}
+function ovExitFs(){
+  if (ovState.fsFake) {
+    ovExitFsFake();
+    return;
+  }
+  var ex = document.exitFullscreen || document.webkitExitFullscreen || document.webkitCancelFullScreen;
+  if (typeof ex === "function" && ovFsNativeEl()) {
+    try {
+      var ret = ex.call(document);
+      if (ret && typeof ret.then === "function") ret.catch(function(){});
+    } catch (err) {}
+  }
+  setTimeout(ovOnFsChange, 50);
+}
+function ovToggleFs(){
+  if (ovIsFs()) ovExitFs();
+  else ovEnterFs();
+}
+function ovFsKeyHandler(e){
+  if (e.key === "Escape" && ovState.fsFake) {
+    e.preventDefault();
+    ovExitFsFake();
+  }
+}
+
 
 function ovCanvasMetrics(canvas){
   var rect = canvas.getBoundingClientRect();
@@ -797,14 +942,30 @@ function ovRecentreOverlay(){
 }
 
 function ovDraw(d, wH, wV, spot, mfov, cam, lens){
+  ovState.drawArgs = { d:d, wH:wH, wV:wV, spot:spot, mfov:mfov, cam:cam, lens:lens };
+  ovUpdateFsReadout(d, cam, lens);
   var canvas = document.getElementById("ovCanvas");
   if (!canvas || !ovState.img) return;
   var stage = document.getElementById("ovStage");
+  var fs = ovIsFs();
   var maxW = (stage && stage.clientWidth) ? stage.clientWidth : 720;
-  maxW = Math.max(280, Math.min(960, maxW));
+  var maxH;
+  if (fs) {
+    maxW = Math.max(280, maxW);
+    maxH = (stage && stage.clientHeight) ? stage.clientHeight : Math.max(240, window.innerHeight - 160);
+    maxH = Math.max(160, maxH);
+  } else {
+    maxW = Math.max(280, Math.min(960, maxW));
+    maxH = 480;
+  }
   var aspect = ovState.natH / ovState.natW;
   var cw = Math.round(maxW);
-  var ch = Math.round(Math.min(480, Math.max(160, cw * aspect)));
+  var ch = Math.round(cw * aspect);
+  if (ch > maxH) {
+    ch = Math.round(maxH);
+    cw = Math.max(1, Math.round(ch / aspect));
+  }
+  ch = Math.max(160, ch);
   if (canvas.width !== cw || canvas.height !== ch) {
     canvas.width = cw;
     canvas.height = ch;
@@ -908,6 +1069,13 @@ function ovDraw(d, wH, wV, spot, mfov, cam, lens){
 }
 
 function mountFovOverlay(d, wH, wV, spot, mfov, cam, lens){
+  // remount replaces DOM — drop orphaned fake-FS body lock
+  var rootNow = document.getElementById("fovOverlay");
+  if (ovState.fsFake && (!rootNow || !rootNow.classList.contains("is-fs-fake"))) {
+    ovState.fsFake = false;
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+  }
   var file = document.getElementById("ovFile");
   var lenIn = document.getElementById("ovLen");
   var canvas = document.getElementById("ovCanvas");
@@ -916,11 +1084,34 @@ function mountFovOverlay(d, wH, wV, spot, mfov, cam, lens){
   var btnDraw = document.getElementById("ovModeDraw");
   var btnMove = document.getElementById("ovModeMove");
   var btnRecentre = document.getElementById("ovRecentre");
+  var btnFs = document.getElementById("ovFullScreen");
+  var btnFsExit = document.getElementById("ovFsExit");
   if (!file || !canvas) return;
 
   function redraw(){ ovDraw(d, wH, wV, spot, mfov, cam, lens); }
 
   ovUpdateModeUi();
+  ovUpdateFsReadout(d, cam, lens);
+  if (btnFs) btnFs.textContent = ovIsFs() ? "Exit full screen" : "Full screen";
+  if (btnFs) btnFs.onclick = function(){ ovToggleFs(); };
+  if (btnFsExit) btnFsExit.onclick = function(){ ovExitFs(); };
+
+  // one shared resize/fs listener (replace previous)
+  if (window._ovFsBound) {
+    document.removeEventListener("fullscreenchange", window._ovFsBound);
+    document.removeEventListener("webkitfullscreenchange", window._ovFsBound);
+    window.removeEventListener("resize", window._ovResizeBound);
+    document.removeEventListener("keydown", window._ovFsKeyBound);
+  }
+  window._ovFsBound = function(){ ovOnFsChange(); };
+  window._ovResizeBound = function(){
+    if (ovState.img) ovRedrawFromArgs();
+  };
+  window._ovFsKeyBound = ovFsKeyHandler;
+  document.addEventListener("fullscreenchange", window._ovFsBound);
+  document.addEventListener("webkitfullscreenchange", window._ovFsBound);
+  window.addEventListener("resize", window._ovResizeBound);
+  document.addEventListener("keydown", window._ovFsKeyBound);
 
   if (lenIn) {
     lenIn.value = String(ovState.lenMm || 1000);
