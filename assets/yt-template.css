@@ -1,0 +1,137 @@
+/* ==========================================================================
+   Yellotec Product-Selector Template — shared styles (yt-template.css)
+   Palette: #FFD100 yellow · #FF6600 orange · black · white.  Font: Arial.  No blue.
+   RULE 1: any black/dark background => text is WHITE. Yellow/orange are accents only
+           (borders, rings, dots, strokes, buttons with BLACK text).
+   ========================================================================== */
+:root {
+  --yellow:#FFD100;
+  --orange:#FF6600;
+  --black:#000000;
+  --ink:#111111;
+  --charcoal:#3F3F3F;
+  --lt:#F2F2F2;
+  --soft:#6B6B6B;
+  --white:#FFFFFF;
+  --border:#E4E4E4;
+}
+* { box-sizing:border-box; }
+html,body { margin:0; padding:0; font-family:Arial, Helvetica, sans-serif; color:var(--charcoal); background:#fafafa; }
+body { min-height:100vh; }
+
+/* ---- Bars ---- */
+.topbar { height:8px; background:var(--yellow); }
+.bottombar { height:6px; background:var(--yellow); margin-top:8px; }
+
+/* ---- Header: Yellotec landscape logo LEFT, partner logo RIGHT (RULES 2+3) ---- */
+.yt-header {
+  display:flex; align-items:center; gap:20px; flex-wrap:nowrap;
+  padding:14px 24px 12px; background:var(--white); border-bottom:2px solid var(--black);
+}
+.yt-header .yt-logo { height:46px; width:auto; display:block; flex-shrink:0; }
+.yt-header .titles { flex:1; min-width:0; padding-left:16px; border-left:3px solid var(--yellow); }
+.yt-header h1 { margin:0; color:var(--black); font-size:1.35rem; font-weight:700; line-height:1.2; }
+.yt-header .sub { margin:4px 0 0; color:var(--soft); font-size:0.88rem; }
+.yt-header .yt-partner { margin-left:auto; display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex-shrink:0; }
+.yt-header .yt-partner img { height:40px; width:auto; max-width:300px; display:block; }
+.yt-header .yt-partner small { font-size:0.72rem; color:var(--black); }
+
+/* ---- Tabs ---- */
+.tabs { display:flex; gap:0; max-width:1280px; margin:14px auto 0; padding:0 18px; border-bottom:2px solid var(--black); }
+.tab {
+  flex:1; text-align:center; padding:12px 10px; font-weight:700; font-size:0.95rem;
+  background:var(--lt); color:var(--black); border:2px solid var(--black); border-bottom:none;
+  border-radius:8px 8px 0 0; cursor:pointer; margin-right:-2px; font-family:inherit;
+}
+.tab + .tab { margin-left:4px; }
+.tab:hover { background:#fff6c2; }
+.tab.is-on { background:var(--yellow); color:var(--black); z-index:1; }
+
+/* ---- Layout ---- */
+.wrap {
+  max-width:1280px; margin:0 auto; padding:16px 18px 28px;
+  display:grid; grid-template-columns: 0.95fr 0.85fr 1.45fr; gap:16px; align-items:start;
+}
+.wrap.two-col { grid-template-columns: 0.9fr 2.1fr; }
+.wrap.two-col .col-apps { display:none; }
+.panel {
+  background:var(--white); border:1px solid var(--border); border-radius:10px;
+  padding:14px 16px; box-shadow:0 1px 2px rgba(0,0,0,.04);
+  display:flex; flex-direction:column; min-height:0;
+}
+.panel h2 { margin:0 0 10px; color:var(--black); font-size:0.95rem; letter-spacing:.02em; display:flex; align-items:center; gap:8px; }
+.panel h2::before { content:""; width:8px; height:8px; border-radius:50%; background:var(--yellow); flex-shrink:0; }
+
+/* ---- Lens / aperture wheel (labels WHITE on dark segments) ---- */
+.lens-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; width:100%; }
+.lens-svg { width:100%; max-width:340px; height:auto; filter:drop-shadow(0 2px 6px rgba(0,0,0,.12)); }
+.seg { fill:#1a1a1a; stroke:var(--yellow); stroke-width:1.2; cursor:pointer; transition: fill .18s, transform .18s; transform-origin:160px 160px; }
+.seg:hover, .seg.is-hover { fill:#333; }
+.seg.is-selected { fill:#000; stroke:var(--orange); stroke-width:2.2; }
+.seg-label { fill:#FFFFFF; font-family:Arial,sans-serif; font-size:10.5px; font-weight:700; pointer-events:none; text-anchor:middle; }
+.seg-sub { fill:#FFFFFF; opacity:.8; font-family:Arial,sans-serif; font-size:7.5px; pointer-events:none; text-anchor:middle; }
+.lens-ring { fill:none; stroke:var(--yellow); stroke-width:6; }
+.lens-ring-outer { fill:none; stroke:#111; stroke-width:10; }
+.lens-glass { fill:url(#glassGrad); opacity:.35; pointer-events:none; }
+.lens-hub { fill:#000; stroke:var(--yellow); stroke-width:2; cursor:pointer; }
+.lens-hub-i { fill:#FFFFFF; font-family:Arial,sans-serif; font-size:18px; font-weight:700; text-anchor:middle; dominant-baseline:central; pointer-events:none; }
+.lens-hint { font-size:0.72rem; color:var(--soft); text-align:center; margin:0 0 4px; }
+.filter-note { font-size:0.72rem; color:var(--orange); min-height:1em; margin:4px 0 0; text-align:center; }
+.clear-btn { margin-top:4px; background:none; border:1px solid var(--border); border-radius:6px; padding:5px 10px; font-size:0.72rem; cursor:pointer; color:var(--soft); align-self:center; font-family:inherit; }
+.clear-btn:hover { border-color:var(--black); color:var(--black); }
+
+/* ---- Dropdown placed BELOW the wheel (RULES 4+6) ---- */
+.wheel-dropdown { width:100%; margin-top:6px; padding-top:10px; border-top:1px solid var(--border); }
+.wheel-dropdown label { display:block; font-size:0.78rem; font-weight:700; color:var(--black); margin:0 0 4px; }
+.wheel-dropdown select, select.yt-select {
+  width:100%; padding:9px 10px; font-size:0.9rem; font-family:inherit;
+  border:1.5px solid var(--black); border-radius:8px; color:var(--black); background:var(--white);
+}
+
+/* ---- Results banner (dark => white text) ---- */
+.results-head { background:var(--black); color:#FFFFFF; border-radius:8px; padding:12px 14px; margin-bottom:10px; border-left:5px solid var(--yellow); }
+.results-head .count { font-size:1rem; font-weight:700; margin:0; color:#FFFFFF; }
+.results-head .hint { margin:4px 0 0; font-size:0.78rem; color:#FFFFFF; opacity:.9; }
+
+/* ---- Segmented control ---- */
+.yt-seg { display:inline-flex; border:2px solid var(--black); border-radius:999px; overflow:hidden; margin:0 0 10px; }
+.yt-seg button { padding:8px 14px; border:none; background:var(--white); color:var(--black); font-weight:700; font-size:0.82rem; cursor:pointer; font-family:inherit; }
+.yt-seg button + button { border-left:2px solid var(--black); }
+.yt-seg button.is-on { background:var(--yellow); color:var(--black); }
+
+/* ---- Notes boxes with Hide/Show (RULE 5: hidden by default) ---- */
+.yt-note { border:1px solid var(--border); border-left:4px solid var(--orange); border-radius:8px; background:#fff8f0; margin:0 0 10px; }
+.yt-note-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 12px; }
+.yt-note-head strong { font-size:0.82rem; color:var(--black); }
+.yt-note-toggle { padding:4px 10px; border:1.5px solid var(--black); border-radius:6px; background:var(--white); color:var(--black); font-size:0.72rem; font-weight:700; cursor:pointer; font-family:inherit; }
+.yt-note-toggle:hover { background:var(--yellow); }
+.yt-note-body { padding:0 12px 10px; font-size:0.8rem; line-height:1.4; color:var(--charcoal); }
+.yt-note:not(.is-open) .yt-note-body { display:none; }
+.yt-note.dark { background:#1a1a1a; border-color:#333; border-left-color:var(--yellow); }
+.yt-note.dark .yt-note-head strong, .yt-note.dark .yt-note-body, .yt-note.dark .yt-note-body b { color:#FFFFFF; }
+
+/* ---- Small grey "not listed" tag ---- */
+.yt-notlisted { display:inline-block; font-size:0.66rem; color:#6B6B6B; background:#EFEFEF; border:1px solid #DDD; border-radius:4px; padding:1px 6px; margin:2px 0; font-weight:400; }
+
+/* ---- CTA ---- */
+.cta { display:block; text-align:center; margin-top:12px; padding:12px 16px; background:var(--yellow); color:var(--black); font-weight:700; text-decoration:none; border-radius:8px; border:2px solid var(--black); font-size:0.92rem; }
+.cta:hover { background:var(--orange); color:var(--black); border-color:var(--orange); }
+.cta small { display:block; font-weight:400; font-size:0.72rem; margin-top:3px; opacity:.85; }
+.empty { color:var(--soft); font-size:0.85rem; padding:8px 0; }
+
+/* ---- Footer ---- */
+.footer { max-width:1280px; margin:0 auto 20px; padding:0 18px; font-size:0.7rem; color:var(--soft); display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+
+@media (max-width:1000px) {
+  .wrap, .wrap.two-col { grid-template-columns:1fr; }
+  .lens-svg { max-width:280px; }
+  .yt-header { flex-wrap:wrap; }
+  .yt-header .titles { order:3; flex-basis:100%; border-left:none; padding-left:0; }
+  .tabs { flex-wrap:wrap; }
+  .tab { flex:1 1 45%; margin:0 0 4px; border-bottom:2px solid var(--black); }
+}
+@media (max-width:520px) {
+  .yt-header .yt-logo { height:36px; }
+  .yt-header .yt-partner img { height:30px; }
+  .yt-header h1 { font-size:1.15rem; }
+}
