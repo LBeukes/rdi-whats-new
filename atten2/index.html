@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en-ZA">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Atten2 Oil Condition Monitoring Selector — Yellotec</title>
+<link rel="stylesheet" href="../assets/yt-template.css"/>
+<style>
+/* Page-specific styles (shared rules live in ../assets/yt-template.css) */
+
+.app-list { display:flex; flex-direction:column; gap:6px; max-height:560px; overflow:auto; padding-right:2px; }
+.app-btn { text-align:left; padding:10px 12px; border:1.5px solid var(--border); border-radius:8px; background:var(--white); color:var(--black); font-size:0.84rem; cursor:pointer; font-family:inherit; }
+.app-btn:hover { border-color:var(--black); background:#fffce8; }
+.app-btn.is-on { background:var(--yellow); border-color:var(--black); font-weight:700; }
+.results-body { flex:1; overflow:auto; max-height:640px; padding-right:4px; }
+.card { border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin:0 0 10px; background:#fff; }
+.card.best { border-left:4px solid var(--yellow); background:#fffceb; }
+.card.runner { border-left:4px solid var(--orange); }
+.card h3 { margin:0 0 4px; color:var(--black); font-size:0.95rem; }
+.card .tag { display:inline-block; font-size:0.68rem; font-weight:700; background:var(--black); color:#FFFFFF; border-left:3px solid var(--yellow); padding:2px 7px; border-radius:999px; margin-bottom:6px; }
+.card .why { margin:0 0 8px; font-size:0.82rem; line-height:1.4; }
+.card .meta { font-size:0.75rem; color:var(--soft); line-height:1.45; }
+.card .meta b { color:var(--charcoal); }
+.card a { color:var(--black); font-weight:700; text-decoration:underline; }
+.card a:hover { color:var(--orange); }
+.card.warn { border-color:var(--orange); background:#fff8f0; font-size:0.78rem; }
+table.spec { width:100%; border-collapse:collapse; font-size:0.78rem; margin:8px 0; }
+table.spec th, table.spec td { border:1px solid var(--border); padding:6px 8px; text-align:left; vertical-align:top; }
+table.spec th { background:var(--lt); color:var(--black); font-weight:700; }
+table.spec tr:nth-child(even) td { background:#fcfcfc; }
+table.spec a { color:var(--black); font-weight:700; }
+.status-disc { color:#B34700; font-weight:700; }
+.toolbar { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 10px; align-items:end; }
+.toolbar label { display:block; font-size:0.72rem; color:var(--soft); margin-bottom:3px; }
+.toolbar select { padding:8px 10px; font-size:0.88rem; font-family:inherit; border:1.5px solid var(--black); border-radius:8px; color:var(--black); background:var(--white); min-width:160px; max-width:260px; }
+.sort-label { display:inline-block; font-size:0.72rem; color:var(--black); background:var(--lt); border:1px solid var(--border); border-radius:4px; padding:3px 8px; margin:0 0 8px; line-height:1.4; }
+.scope-wrap { width:100%; margin-top:10px; }
+.view-toggle { display:flex; gap:6px; margin:0 0 10px; }
+.view-toggle button { flex:1; padding:8px 10px; border:1.5px solid var(--black); border-radius:8px; background:var(--white); color:var(--black); font-weight:700; font-size:0.8rem; cursor:pointer; font-family:inherit; }
+.view-toggle button.is-on { background:var(--yellow); }
+table.mx { width:100%; border-collapse:collapse; font-size:0.74rem; margin:6px 0 8px; }
+table.mx th, table.mx td { border:1px solid var(--border); padding:5px 6px; text-align:center; vertical-align:middle; }
+table.mx td.f { text-align:left; color:var(--black); }
+table.mx th.grp-core { background:var(--yellow); color:var(--black); font-size:0.8rem; }
+table.mx th.grp-elite { background:var(--black); color:#FFFFFF; font-size:0.8rem; }
+table.mx th.ed-core { background:#FFF1B3; color:var(--black); }
+table.mx th.ed-elite { background:#DADADA; color:var(--black); }
+table.mx th.corner { background:var(--black); color:#FFFFFF; text-align:left; }
+table.mx th.ed-pick { outline:3px solid var(--black); outline-offset:-3px; }
+table.mx td.sep { border-left:3px solid var(--black); }
+table.mx tr.hw td { background:#F7F7F7; font-size:0.7rem; }
+.ck { display:inline-block; width:18px; height:18px; line-height:18px; border-radius:50%; background:var(--yellow); color:var(--black); font-weight:800; font-size:0.72rem; }
+.no { color:#9A9A9A; }
+.mx-ast { font-size:0.68rem; color:var(--soft); }
+.needs { display:grid; grid-template-columns:1fr 1fr; gap:4px 10px; margin:6px 0 4px; font-size:0.78rem; }
+.needs label { display:flex; gap:6px; align-items:flex-start; cursor:pointer; color:var(--black); }
+.needs input { accent-color:#000000; margin-top:2px; }
+.need-reset { font-size:0.72rem; border:1px solid var(--border); background:var(--white); border-radius:6px; padding:3px 8px; cursor:pointer; font-family:inherit; }
+
+@media (max-width:1000px) { .results-body, .app-list { max-height:none; } }
+
+</style>
+</head>
+<body>
+<div class="topbar"></div>
+<header class="yt-header">
+  <img class="yt-logo" src="../assets/yellotec-logo-landscape-black.svg" alt="Yellotec"/>
+  <div class="titles">
+    <h1>Atten2 Oil Condition Monitoring Selector</h1>
+    <p class="sub">Recommend, browse and compare Atten2 online and portable oil sensors — Yellotec sales tool. Verify the datasheet before quoting.</p>
+  </div>
+  <div class="yt-partner">
+    <img src="../assets/atten2-logo.svg" alt="Atten2"/>
+    <small>Yellotec · Atten2 partner</small>
+  </div>
+</header>
+<nav class="tabs" role="tablist" aria-label="Selector modes">
+  <button type="button" class="tab is-on" data-tab="recommend" role="tab">Recommend</button>
+  <button type="button" class="tab" data-tab="browse" role="tab">Browse</button>
+  <button type="button" class="tab" data-tab="compare" role="tab">Compare</button>
+</nav>
+<main class="wrap" id="mainWrap">
+  <section class="panel" id="lensPanel">
+    <h2>What do you need to measure?</h2>
+    <p class="lens-hint">Hover or click a segment to filter</p>
+    <div class="lens-wrap">
+      <svg class="lens-svg" id="lens" viewBox="0 0 320 320" role="img" aria-label="What do you need to measure?">
+        <defs>
+          <radialGradient id="glassGrad" cx="40%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.55"/>
+            <stop offset="55%" stop-color="#888888" stop-opacity="0.15"/>
+            <stop offset="100%" stop-color="#000000" stop-opacity="0.35"/>
+          </radialGradient>
+        </defs>
+        <circle class="lens-ring-outer" cx="160" cy="160" r="152"/>
+        <circle class="lens-ring" cx="160" cy="160" r="148"/>
+        <g id="segments"></g>
+        <circle class="lens-glass" cx="160" cy="160" r="138"/>
+        <circle class="lens-hub" id="lensHub" cx="160" cy="160" r="28"/>
+        <text class="lens-hub-i" x="160" y="161">i</text>
+      </svg>
+      <p class="filter-note" id="filterNote"></p>
+      <button type="button" class="clear-btn" id="clearWheel">Clear filter</button>
+      <div class="wheel-dropdown" id="wheelDropdown" style="display:none">
+        <label for="appSelect" id="appSelectLabel">Application</label>
+        <select id="appSelect"></select>
+      </div>
+      <div class="scope-wrap" id="scopeWrap"></div>
+    </div>
+  </section>
+  <section class="panel col-apps">
+    <h2>Applications</h2>
+    <div class="app-list" id="appList"></div>
+  </section>
+  <section class="panel">
+    <h2 id="resultsTitle">Results</h2>
+    <div class="results-head">
+      <p class="count" id="sinceCount">—</p>
+      <p class="hint" id="sinceHint">Pick an application or category to start.</p>
+    </div>
+    <div class="results-body" id="results"></div>
+    <a class="cta" href="mailto:sales@yellotec.com?subject=Atten2%20oil%20monitoring%20recommendation">Ask Yellotec<small>sales@yellotec.com</small></a>
+  </section>
+</main>
+<footer class="footer">
+  <span>Specs from atten2.com and Atten2 datasheets (checked 13 Nov 2026). Values Atten2 does not publish are flagged, never invented.</span>
+  <span>Yellotec · Yellow Technical Services (Pty) Ltd · www.yellotec.co.za</span>
+</footer>
+<div class="bottombar"></div>
+<script>
+const PAGE = {"itemNoun": "Product", "itemNounPlural": "products", "allLabel": "All products", "allOption": "All products (fewest → most parameters)", "sortLabel": "Sorted smallest → largest by number of oil parameters measured (from the datasheet), then by weight; products with unpublished weight last within a group. Atten2 does not publish prices.", "sortShort": "parameters measured, then weight.", "cardLines": [["Family", "family"], ["Measures", "measures"], ["Pressure", "pressure"], ["Comms", "comms"]], "recCols": [["Family", "family"], ["Parameters", "paramsTxt"]], "browseCols": [["Family", "family"], ["Parameters", "paramsTxt"], ["Pressure", "pressure"], ["Comms", "comms"]], "compareRows": [["Family", "family"], ["Parameters (count)", "paramsTxt"], ["Measures", "measures"], ["Accuracy", "accuracy"], ["Pressure", "pressure"], ["Temperature", "temp"], ["Viscosity / flow", "visc"], ["Communications", "comms"], ["Power", "power"], ["Body / ratings", "body"], ["Typical use", "typical"], ["Yellotec listing", "_yt"]], "defaultApp": "windgb", "defaultCompare": ["s120", "s120d", "ohpmax"], "defaultBrowse": "s120", "scopeTitle": "Scope of this selector", "scopeHtml": "<b>In scope:</b> all current Atten2 online and portable oil-condition products on atten2.com: OilWear particle/wear sensors, OilHealth/OilMoisture probes, OilStrike, OilCMS portables, SMK and RSMK kits.<br/><b>Not included:</b> software/cloud and accessories (manifolds, gateways) except where part of a kit."};
+const ITEMS = [{"id": "c100", "name": "OilWear C100", "family": "Online particle counter (OilWear)", "wheel": "particles", "params": 2, "kg": 0.32, "measures": "ISO 4406:1999 / NAS 1638 cleanliness code; particles >4 µm in 6 sizes (4, 6, 14, 21, 38, >70 µm); air-bubble discrimination", "accuracy": "±1 ISO", "pressure": "Up to 150 bar", "temp": "Fluid up to 85 °C; electronics −30 to 70 °C", "visc": "Up to 1,280 cSt; flow up to 0.5 l/min (optimal 0.2 l/min)", "comms": "RS485 Modbus RTU; Ethernet Modbus TCP/IP, FTP", "power": "24 VDC, <150 mA", "body": "88.5 × 60 × 62 mm; 320 g; 1/8\" BSPP (×2); IP65; CE, UL; log of last 10,000 tests", "typical": "Hydraulic and lube cleanliness trending, test benches, filtration control", "source": "https://www.atten2.com/en/sensors/oilwear/", "datasheet": "https://www.atten2.com/wp-content/uploads/2025/11/Datasheet_OilWear-C100-EN_2025-1.pdf", "notes": "yellotec.co.za lists the OilWear family page; the C100 model is not named there.", "wheelExtra": [], "sortKey": [2, 0.32], "paramsTxt": "2"}, {"id": "s120", "name": "OilWear S120", "family": "Online particle & wear-mode sensor (OilWear)", "wheel": "shape", "wheelExtra": ["particles", "degradation"], "params": 4, "kg": 0.32, "measures": "As C100 plus particle-shape recognition (fatigue, sliding, cutting, other) and oil degradation (%)", "accuracy": "±1 ISO", "pressure": "Up to 150 bar", "temp": "Fluid up to 85 °C; electronics −30 to 70 °C", "visc": "Up to 1,280 cSt; flow up to 0.5 l/min (optimal 0.2 l/min)", "comms": "RS485 Modbus RTU; Ethernet Modbus TCP/IP, FTP", "power": "24 VDC, <150 mA", "body": "88.5 × 60 × 62 mm; 320 g; 1/8\" BSPP (×2); IP65; CE, UL; last 10,000 tests + 100 images", "typical": "Wind, mining and turbine gearboxes, where root-cause wear mode matters", "source": "https://www.atten2.com/en/sensors/oilwear/", "datasheet": "https://www.atten2.com/wp-content/uploads/2025/11/Datasheet_OilWear-S120-EN_2025-1.pdf", "sortKey": [4, 0.32], "paramsTxt": "4"}, {"id": "s120d", "name": "OilWear S120-D (display)", "family": "Online particle & wear-mode sensor (OilWear)", "wheel": "shape", "wheelExtra": ["particles", "degradation"], "params": 4, "kg": 0.335, "measures": "As S120 with built-in 20 × 41 mm display; calibrated to ISO 11171", "accuracy": "±1 ISO", "pressure": "Up to 150 bar", "temp": "Fluid up to 85 °C; electronics −30 to 70 °C", "visc": "Up to 1,280 cSt; flow up to 0.5 l/min (optimal 0.2 l/min)", "comms": "RS485 Modbus RTU; Ethernet Modbus TCP/IP, FTP", "power": "24 VDC, <150 mA", "body": "113.5 × 60.6 × 62.7 mm; 335 g; IP65", "typical": "Machines where the technician needs a local read-out at the sensor", "source": "https://www.atten2.com/en/sensors/oilwear/", "datasheet": "https://www.atten2.com/wp-content/uploads/2025/11/Datasheet_OilWear-S120-D-EN_2025.pdf", "ytListed": true, "sortKey": [4, 0.335], "paramsTxt": "4"}, {"id": "s120atex", "name": "OilWear S120 ATEX", "family": "Online particle & wear-mode sensor (Ex)", "wheel": "shape", "wheelExtra": ["particles", "degradation"], "params": 4, "kg": 0.32, "measures": "As S120 (counts, shape, bubbles, degradation) in an Ex-certified version", "accuracy": "±1 ISO", "pressure": "Up to 150 bar", "temp": "Environment 0–60 °C (per ATEX datasheet)", "visc": "Up to 1,280 cSt", "comms": "RS485 Modbus RTU; Ethernet Modbus TCP/IP, FTP", "power": "24 VDC, <150 mA", "body": "88.5 × 60 × 62 mm; 320 g; IP55; CE Ex II 3G Ex ec op is IIB T4 Gc (Zone 2); UL 121201 / CSA C22.2 #213-17 Class I Div 2 Groups C–D T4 (certain serial numbers only)", "typical": "Petrochemical, gas compression and other Zone 2 / Class I Div 2 sites", "source": "https://www.atten2.com/en/sensors/oilwear/", "datasheet": "https://www.atten2.com/wp-content/uploads/2025/11/Datasheet_OilWear-S120-ATEX-EN_2025.pdf", "notes": "Zone 2 (category 3G) only, not Zone 1. UL/CSA marking applies to certain serial numbers only, per the datasheet. Not named on yellotec.co.za (OilWear family page only).", "sortKey": [4, 0.32], "paramsTxt": "4"}, {"id": "sss", "name": "OilWear S SS (stainless steel)", "family": "Online particle & wear-mode sensor (stainless)", "wheel": "shape", "wheelExtra": ["particles"], "params": 4, "kg": null, "measures": "OilWear S technology in a stainless-steel body (shown on atten2.com OilWear page)", "accuracy": "Not published", "pressure": "Not published", "temp": "Not published", "visc": "Not published", "comms": "Not published", "power": "Not published", "body": "Stainless steel; dimensions/weight not published", "typical": "Corrosive or hygienic environments (marine, offshore, food)", "source": "https://www.atten2.com/en/sensors/oilwear/", "notes": "Named on atten2.com only; no datasheet published. Parameter count assumed to equal S120 for sorting. Ask Atten2 before quoting.", "sortKey": [4, 999], "paramsTxt": "4"}, {"id": "ohp", "name": "OilHealth Probe", "family": "In-tank oil degradation probe", "wheel": "degradation", "params": 1, "kg": null, "measures": "Oil degradation (%) and raw values; oil temperature (0.2 °C resolution); sensor temperature", "accuracy": "Not published", "pressure": "Up to 12 bar", "temp": "Optimal 30–50 °C", "visc": "Up to 680 cSt; works in non-circulating or low-flow systems", "comms": "Modbus RTU (RS485); Modbus TCP via accessory", "power": "24 VDC, <100 mA", "body": "1/2\" BSPT; aluminium (optional steel), Viton, BK7; IP65; CE", "typical": "Setting oil-change intervals on gearboxes, hydraulics and engines", "source": "https://www.atten2.com/en/sensors/oilhealth/", "datasheet": "https://www.atten2.com/wp-content/uploads/2025/11/Datasheet_OilHealth-Probe-EN_2025.pdf", "ytListed": true, "wheelExtra": [], "sortKey": [1, 999], "paramsTxt": "1"}, {"id": "ohpmax", "name": "OilHealth Probe Max", "family": "In-tank degradation + water probe", "wheel": "degradation", "wheelExtra": ["water"], "params": 2, "kg": null, "measures": "As OilHealth Probe plus water presence and absolute water 250–25,000 ppm (0.025–2.5%)", "accuracy": "Water ppm requires oil profiling", "pressure": "Up to 12 bar", "temp": "Optimal 30–50 °C", "visc": "Up to 680 cSt", "comms": "Modbus RTU (RS485); Modbus TCP via accessory", "power": "24 VDC, <100 mA", "body": "1/2\" BSPT; aluminium (optional steel); IP65; CE", "typical": "Gearboxes and turbines where both ageing and water ingress matter", "source": "https://www.atten2.com/en/sensors/oilhealth/", "datasheet": "https://www.atten2.com/wp-content/uploads/2025/11/Datasheet_OilHealth-Probe-MAX_EN_2025.pdf", "ytListed": true, "sortKey": [2, 999], "paramsTxt": "2"}, {"id": "omoist", "name": "OilMoisture", "family": "In-tank water-in-oil probe", "wheel": "water", "params": 1, "kg": null, "measures": "Water 250–25,000 ppm (dissolved, emulsified and free water); degradation-risk indication only", "accuracy": "Water ppm requires oil profiling", "pressure": "Up to 12 bar", "temp": "Optimal 30–50 °C", "visc": "Up to 680 cSt", "comms": "Modbus RTU (RS485); Modbus TCP via accessory", "power": "24 VDC, <100 mA", "body": "1/2\" BSPT; IP65; CE", "typical": "Water ingress alarms: seals, coolers, washdown, humid sites", "source": "https://www.atten2.com/en/sensor/oilmoisture/", "datasheet": "https://www.atten2.com/wp-content/uploads/2025/11/Datasheet_OilMoisture_EN_2025.pdf", "ytListed": true, "wheelExtra": [], "sortKey": [1, 999], "paramsTxt": "1"}, {"id": "ostrike", "name": "OilStrike", "family": "Bypass degradation + water sensor", "wheel": "degradation", "wheelExtra": ["water"], "params": 2, "kg": null, "measures": "Oil degradation and water (bypass/flow-through version, per atten2.com)", "accuracy": "Not published", "pressure": "Not published", "temp": "Not published", "visc": "Not published", "comms": "Not published", "power": "Not published", "body": "Not published", "typical": "Circulating lube systems where an in-tank probe cannot be fitted", "source": "https://www.atten2.com/en/sensors/oilhealth/", "notes": "Mentioned on atten2.com only; no datasheet published. Not named on yellotec.co.za. Ask Atten2 before quoting.", "sortKey": [2, 999], "paramsTxt": "2"}, {"id": "ocms", "name": "OilCMS (portable)", "family": "Portable particle counter", "wheel": "portable", "wheelExtra": ["particles", "shape"], "params": 3, "kg": null, "measures": "ISO 4406, SAE AS4059 and NAS 1638 codes; 6 sizes (4, 6, 14, 21, 38, >70 µm); bubble and water-droplet elimination; fatigue/cutting/sliding wear and fibre identification", "accuracy": "Not published", "pressure": "Live sampling up to 350 bar (high-pressure adaptor); bottle/tank up to 2.5 bar", "temp": "Not published", "visc": "1–2,400 cSt (stepper-motor pump); mineral, synthetic, organic oils and diesel fuel", "comms": "Local storage + off-site backup; CSV export", "power": "Internal rechargeable lithium battery", "body": "Touchscreen; weight not published", "typical": "Site audits, filtration flushing, oil and fuel acceptance checks", "source": "https://www.atten2.com/en/sensors/oilcms/", "datasheet": "https://www.atten2.com/wp-content/uploads/2024/11/Datasheet_OILCMS-EN.pdf", "ytListed": true, "sortKey": [3, 999], "paramsTxt": "3"}, {"id": "ocmsds", "name": "OilCMS PRO DS", "family": "Portable particle + oil-quality lab", "wheel": "portable", "wheelExtra": ["particles", "shape", "degradation", "water"], "params": 5, "kg": 10, "measures": "OilCMS functions plus oil degradation (TDN; 500 oils profiled), water (%RH) and image storage", "accuracy": "Not published", "pressure": "Live sampling up to 350 bar (adaptor); bottle/tank sampling", "temp": "Not published", "visc": "See datasheet", "comms": "CSV export; image storage", "power": "Rechargeable battery", "body": "10\" touchscreen; 10 kg", "typical": "Reliability teams running an in-house oil-analysis programme", "source": "https://www.atten2.com/en/sensors/oilcms/", "datasheet": "https://www.atten2.com/wp-content/uploads/2026/07/Datasheet_OILCMS-PRO-DS-EN.pdf", "ytListed": true, "notes": "yellotec.co.za lists 'OIL CMS PRO'; confirm it corresponds to the PRO DS.", "sortKey": [5, 10], "paramsTxt": "5"}, {"id": "ocmshvd", "name": "OilCMS PRO HVD", "family": "Portable particle + viscosity/density lab", "wheel": "portable", "wheelExtra": ["particles", "shape", "water", "viscosity"], "params": 6, "kg": null, "measures": "OilCMS functions plus water (%RH), dynamic viscosity and density", "accuracy": "Viscosity ±5%; density ±2%", "pressure": "Bottle / live sampling (see datasheet)", "temp": "Not published", "visc": "Viscosity 25–400 mPa·s; density printed as 0.6–1.3 kg/m³ (resolution 0.001)", "comms": "CSV export", "power": "Rechargeable battery", "body": "Weight not published", "typical": "Lubricant verification, mixing/contamination checks, viscosity drift", "source": "https://www.atten2.com/en/sensors/oilcms/", "datasheet": "https://www.atten2.com/wp-content/uploads/2024/11/Datasheet_OILCMS-PRO-HVD-EN.pdf", "ytListed": true, "notes": "Datasheet prints density as '0.6–1.3 kg/m^3'; oil density is about 0.6–1.3 g/cm³ (600–1,300 kg/m³). Likely a unit typo; confirm with Atten2 before quoting.", "sortKey": [6, 999], "paramsTxt": "6"}, {"id": "smk", "name": "SMK (Smart Monitoring Kit)", "family": "Fixed monitoring kit (wall-mount)", "wheel": "particles", "wheelExtra": ["shape", "degradation"], "params": 4, "kg": 5, "measures": "OilWear S-class counts, shape, bubbles and degradation plus flow", "accuracy": "±1 ISO", "pressure": "2–45 bar (system pressure)", "temp": "−20 to 70 °C", "visc": "Up to 540 cSt; mineral and synthetic oil", "comms": "Ethernet Modbus TCP/IP, FTP; HMI display with USB export", "power": "24 VDC, 200 mA", "body": "249 × 400 × 132 mm; 5 kg", "typical": "Industrial hydraulics and lube skids needing a ready-plumbed kit", "source": "https://www.atten2.com/en/sensors/smk/", "datasheet": "https://www.atten2.com/wp-content/uploads/2024/11/Datasheet_SMK-EN.pdf", "ytListed": true, "sortKey": [4, 5], "paramsTxt": "4"}, {"id": "smkp", "name": "SMKP (SMK with pump)", "family": "Fixed monitoring kit with pump", "wheel": "particles", "wheelExtra": ["shape", "degradation"], "params": 4, "kg": 5.6, "measures": "As SMK, with integrated pump for low-pressure tanks", "accuracy": "±1 ISO", "pressure": "0–2.5 bar (pump draws from tank)", "temp": "−20 to 70 °C", "visc": "Up to 540 cSt", "comms": "Ethernet Modbus TCP/IP, FTP; HMI display with USB export", "power": "24 VDC, 800 mA", "body": "249 × 400 × 132 mm; 5.6 kg", "typical": "Gearboxes and reservoirs with no pressurised take-off", "source": "https://www.atten2.com/en/sensors/smk/", "datasheet": "https://www.atten2.com/wp-content/uploads/2024/11/Datasheet_SMK-EN.pdf", "notes": "Not named separately on yellotec.co.za (SMK page only).", "sortKey": [4, 5.6], "paramsTxt": "4"}, {"id": "smk3", "name": "SMK3", "family": "Fixed monitoring kit (5 parameters)", "wheel": "particles", "wheelExtra": ["shape", "degradation", "water"], "params": 5, "kg": null, "measures": "Particles, shape, degradation, water and temperature; optional display and pump (per atten2.com)", "accuracy": "Not published", "pressure": "Not published", "temp": "Not published", "visc": "Not published", "comms": "Not published", "power": "Not published", "body": "Not published", "typical": "Combined cleanliness + water + ageing on one skid", "source": "https://www.atten2.com/en/sensors/smk/", "notes": "Shown on atten2.com only; no datasheet published. Not named on yellotec.co.za.", "sortKey": [5, 999], "paramsTxt": "5"}, {"id": "rsmk", "name": "RSMK (Rugged SMK)", "family": "Rugged kit for mobile equipment", "wheel": "particles", "wheelExtra": ["shape", "degradation"], "params": 4, "kg": 5.9, "measures": "OilWear S-class counts, shape and degradation in a rugged enclosure", "accuracy": "±1 ISO", "pressure": "0–2.5 bar", "temp": "−20 to 70 °C", "visc": "Up to 540 cSt; mineral and synthetic oil", "comms": "Modbus RTU; RSMKG variant adds 3G/4G gateway (MQTT / SFTP)", "power": "150 mA (RSMK) / 300 mA (RSMKG)", "body": "300 × 240 × 140 mm; 5.9 kg; IP66 / IK10; vibration/shock IEC 60068-2-6 / -27", "typical": "Haul trucks, excavators, mining and construction fleets", "source": "https://www.atten2.com/en/sensors/rsmk/", "datasheet": "https://www.atten2.com/wp-content/uploads/2026/01/Datasheet_RSMK-EN.pdf", "ytListed": true, "sortKey": [4, 5.9], "paramsTxt": "4"}, {"id": "rsmkp", "name": "RSMKP (Rugged SMK with pump)", "family": "Rugged kit for mobile equipment, with pump", "wheel": "particles", "wheelExtra": ["shape", "degradation"], "params": 4, "kg": 6.5, "measures": "As RSMK with gear pump for unpressurised circuits", "accuracy": "±1 ISO", "pressure": "0–2.5 bar", "temp": "−20 to 70 °C", "visc": "Up to 540 cSt; mineral and synthetic oil", "comms": "Modbus RTU; gateway variant with 3G/4G (MQTT / SFTP)", "power": "800 mA / 950 mA (gateway variant)", "body": "300 × 240 × 140 mm; 6.5 kg; IP66 / IK10", "typical": "Mobile gearboxes, final drives and tanks without pressure take-off", "source": "https://www.atten2.com/en/sensors/rsmk/", "datasheet": "https://www.atten2.com/wp-content/uploads/2026/01/Datasheet_RSMKP-EN.pdf", "notes": "Not named separately on yellotec.co.za (RSMK page only).", "sortKey": [4, 6.5], "paramsTxt": "4"}];
+const RECS = [{"id": "windgb", "label": "Wind turbine main gearbox", "need": "Early wear detection and root cause on the gearbox lube circuit.", "bestId": "s120", "bestWhy": "Counts, wear-mode shape and degradation in one 320 g sensor; Modbus to SCADA.", "runnerId": "ohpmax", "runnerWhy": "Adds ageing and water trending in the sump.", "suitableIds": ["s120", "s120d", "ohpmax", "smkp"], "tip": "Pair S120 (circuit) with OilHealth Probe Max (sump) for a full oil picture."}, {"id": "windhyd", "label": "Wind pitch / yaw hydraulics", "need": "Cleanliness of servo hydraulics.", "bestId": "s120", "bestWhy": "ISO 4406 with bubble discrimination avoids false alarms in hydraulics.", "runnerId": "c100", "runnerWhy": "Lower-cost counting where wear mode is not needed.", "suitableIds": ["s120", "c100", "s120d"], "tip": "Up to 150 bar inline."}, {"id": "mining", "label": "Mining mills & gearboxes", "need": "Heavily loaded gearboxes; contamination and water.", "bestId": "s120", "bestWhy": "Wear-mode shape tells fatigue from cutting wear.", "runnerId": "omoist", "runnerWhy": "Water ingress alarm for washdown and humid sites.", "suitableIds": ["s120", "smkp", "omoist", "ohpmax"], "tip": "Use SMKP where there is no pressurised take-off."}, {"id": "mobile", "label": "Mobile equipment fleets", "need": "Rugged online monitoring on haul trucks and excavators.", "bestId": "rsmk", "bestWhy": "IP66/IK10 enclosure, shock-tested, optional 3G/4G gateway.", "runnerId": "rsmkp", "runnerWhy": "Pump version for unpressurised circuits.", "suitableIds": ["rsmk", "rsmkp"], "tip": "RSMKG variant streams via MQTT/SFTP."}, {"id": "indhyd", "label": "Industrial hydraulics", "need": "Plant hydraulic power units and lube skids.", "bestId": "smk", "bestWhy": "Ready-plumbed kit, 2–45 bar, built-in HMI, Ethernet Modbus TCP.", "runnerId": "s120d", "runnerWhy": "Local display at the sensor when no HMI is needed.", "suitableIds": ["smk", "smkp", "s120d", "c100", "s120"], "tip": "Choose SMKP for tank-side installation."}, {"id": "turbine", "label": "Steam / gas turbine lube oil", "need": "Varnish risk, ageing and cleanliness.", "bestId": "s120", "bestWhy": "Cleanliness plus degradation trending.", "runnerId": "ohpmax", "runnerWhy": "Ageing + water in the reservoir.", "suitableIds": ["s120", "ohpmax", "ohp", "smk"], "tip": "Confirm viscosity ≤1,280 cSt for OilWear."}, {"id": "hazard", "label": "Petrochemical / hazardous area", "need": "Oil monitoring in Zone 2 / Class I Div 2.", "bestId": "s120atex", "bestWhy": "CE Ex II 3G Ex ec op is IIB T4 Gc; UL/CSA Class I Div 2.", "runnerId": "sss", "runnerWhy": "Stainless body for corrosive sites (Ex rating not published).", "suitableIds": ["s120atex", "sss"], "tip": "Zone 2 only: not Zone 1."}, {"id": "paper", "label": "Pulp & paper", "need": "Water-laden environment; press and dryer lube.", "bestId": "s120", "bestWhy": "Counts, wear and degradation.", "runnerId": "ohpmax", "runnerWhy": "Water ppm in humid lube circuits.", "suitableIds": ["s120", "ohpmax", "omoist", "smk"], "tip": ""}, {"id": "interval", "label": "Condition-based oil changes", "need": "Change oil on condition, not calendar.", "bestId": "ohp", "bestWhy": "Direct in-tank degradation % with temperature; no bypass needed.", "runnerId": "ohpmax", "runnerWhy": "Adds water ppm.", "suitableIds": ["ohp", "ohpmax", "ostrike"], "tip": "Water ppm needs oil profiling by Atten2."}, {"id": "water", "label": "Water ingress detection", "need": "Detect dissolved, emulsified and free water early.", "bestId": "omoist", "bestWhy": "250–25,000 ppm water directly in the tank.", "runnerId": "ohpmax", "runnerWhy": "Water plus degradation in one probe.", "suitableIds": ["omoist", "ohpmax", "ostrike", "ocmsds"], "tip": ""}, {"id": "portable", "label": "Portable audits & filtration flushing", "need": "Spot checks across many machines.", "bestId": "ocmsds", "bestWhy": "Counts, shape, degradation and water in one 10 kg portable lab.", "runnerId": "ocms", "runnerWhy": "Lighter portable counter (counts + shape) for flushing jobs.", "suitableIds": ["ocms", "ocmsds", "ocmshvd"], "tip": "Live sampling up to 350 bar via adaptor."}, {"id": "visc", "label": "Viscosity / wrong-oil checks", "need": "Verify lubricant grade and detect mixing.", "bestId": "ocmshvd", "bestWhy": "Only Atten2 unit measuring viscosity (25–400 mPa·s) and density.", "runnerId": "ocmsds", "runnerWhy": "Degradation against 500 profiled oils.", "suitableIds": ["ocmshvd", "ocmsds"], "tip": "Confirm density units with Atten2 (see note)."}, {"id": "bench", "label": "Automotive / test benches", "need": "Cleanliness during run-in and component testing.", "bestId": "s120", "bestWhy": "Fast online counts with wear mode during run-in.", "runnerId": "c100", "runnerWhy": "Counting only.", "suitableIds": ["s120", "c100", "s120d"], "tip": ""}, {"id": "diesel", "label": "Diesel fuel cleanliness", "need": "Fuel acceptance and storage checks.", "bestId": "ocms", "bestWhy": "Datasheet lists diesel fuel compatibility.", "runnerId": "ocmsds", "runnerWhy": "More parameters if needed.", "suitableIds": ["ocms", "ocmsds"], "tip": ""}];
+const WHEEL = [{"id": "particles", "label": "Particles", "sub": "ISO 4406 · NAS"}, {"id": "shape", "label": "Wear mode", "sub": "Shape analysis"}, {"id": "degradation", "label": "Degradation", "sub": "Oil ageing"}, {"id": "water", "label": "Water", "sub": "ppm / %RH"}, {"id": "viscosity", "label": "Viscosity", "sub": "& density"}, {"id": "portable", "label": "Portable", "sub": "OilCMS"}];
+const VERIFY = [["Source rule", "All specs from atten2.com product pages and Atten2 English datasheets (2024–2026 editions, checked 13 Nov 2026). 'Not published' marks values Atten2 does not publish."], ["Page-only products", "OilWear S SS, OilStrike and SMK3 appear on atten2.com without datasheets; confirm specs with Atten2."], ["OilCMS PRO HVD density", "Datasheet prints 0.6–1.3 kg/m³; likely g/cm³. Confirm."], ["S120 ATEX", "Zone 2 (II 3G) only; UL/CSA Class I Div 2 for certain serial numbers only."], ["Water ppm", "OilHealth Probe Max and OilMoisture need oil profiling for absolute ppm."], ["Yellotec catalogue", "Checked against yellotec.co.za product sitemap. All Atten2 families are listed; some variants are not named individually (noted per product)."], ["Sort basis", "Number of oil parameters measured (Yellotec count from datasheet), then weight; unknown weight last. Atten2 does not publish prices."]];
+const MATRIX = null;
+
+const CX=160, CY=160, R=138, INNER=32;
+const N = WHEEL.length;
+let tab = "recommend";
+let selectedWheel = null;
+let selectedApp = PAGE.defaultApp;
+let compareIds = PAGE.defaultCompare.slice();
+let browseId = PAGE.defaultBrowse;
+let browseApp = "all";
+var NOTE_OPEN = {};
+let cmpView = "side";
+var NEEDS = {};
+
+function esc(s){
+  return String(s==null?"":s).replace(/[&<>"']/g, function(ch){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch];
+  });
+}
+function noteBox(key, title, bodyHtml, dark){
+  var open = !!NOTE_OPEN[key];
+  return '<div class="yt-note'+(dark?' dark':'')+(open?' is-open':'')+'" data-note="'+esc(key)+'">'+
+    '<div class="yt-note-head"><strong>'+esc(title)+'</strong>'+
+    '<button type="button" class="yt-note-toggle" aria-expanded="'+(open?'true':'false')+'">'+(open?'Hide':'Show')+'</button></div>'+
+    '<div class="yt-note-body">'+bodyHtml+'</div></div>';
+}
+document.addEventListener("click", function(e){
+  var btn = e.target.closest ? e.target.closest(".yt-note-toggle") : null;
+  if (!btn) return;
+  var box = btn.closest(".yt-note");
+  var open = !box.classList.contains("is-open");
+  box.classList.toggle("is-open", open);
+  btn.textContent = open ? "Hide" : "Show";
+  btn.setAttribute("aria-expanded", open ? "true" : "false");
+  NOTE_OPEN[box.getAttribute("data-note")] = open;
+});
+function notListedTag(c){
+  return c.ytListed === false ? ' <span class="yt-notlisted">Not listed on yellotec.co.za, ask sales</span>' : '';
+}
+function val(c, key){
+  var v = c[key];
+  return (v==null || v==="") ? "Not published" : v;
+}
+function statusText(c){ return c.status || "Current"; }
+function statusHtml(c){ return c.status ? '<span class="status-disc">'+esc(c.status)+'</span>' : 'Current'; }
+function ytText(c){ return c.ytListed === false ? "Not listed on yellotec.co.za" : (c.ytListed === true ? "Listed on yellotec.co.za" : "Not confirmed"); }
+
+function polar(cx,cy,r,deg) {
+  const a = (deg - 90) * Math.PI / 180;
+  return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+}
+function wedgePath(i) {
+  const start = i * (360/N);
+  const end = (i+1) * (360/N);
+  const gap = 1.2;
+  const s = start + gap/2, e = end - gap/2;
+  const [x1,y1] = polar(CX,CY,R,s);
+  const [x2,y2] = polar(CX,CY,R,e);
+  const [ix1,iy1] = polar(CX,CY,INNER,s);
+  const [ix2,iy2] = polar(CX,CY,INNER,e);
+  const large = (e-s) > 180 ? 1 : 0;
+  return "M "+ix1+" "+iy1+" L "+x1+" "+y1+" A "+R+" "+R+" 0 "+large+" 1 "+x2+" "+y2+" L "+ix2+" "+iy2+" A "+INNER+" "+INNER+" 0 "+large+" 0 "+ix1+" "+iy1+" Z";
+}
+function labelPos(i) {
+  const mid = (i + 0.5) * (360/N);
+  return polar(CX,CY, R*0.62, mid);
+}
+function byId(id){ return ITEMS.find(function(c){ return c.id===id; }) || ITEMS[0]; }
+function wheelMatch(c, wid){
+  if (!wid) return true;
+  if (c.wheel === wid) return true;
+  return (c.wheelExtra||[]).indexOf(wid) >= 0;
+}
+function recById(id){ return RECS.find(function(r){ return r.id===id; }); }
+function appMatch(c, appId){
+  var rec = recById(appId);
+  if (!rec) return true;
+  return rec.bestId===c.id || rec.runnerId===c.id || rec.suitableIds.indexOf(c.id) >= 0;
+}
+function cmpKey(a, b){
+  for (var i=0; i<Math.max(a.length,b.length); i++){
+    var x = a[i]==null?0:a[i], y = b[i]==null?0:b[i];
+    if (x !== y) return x < y ? -1 : 1;
+  }
+  return 0;
+}
+function sortAll(list){
+  return list.slice().sort(function(a,b){ return cmpKey(a.sortKey||[], b.sortKey||[]) || a.name.localeCompare(b.name); });
+}
+function filteredItems(){
+  return ITEMS.filter(function(c){
+    if (!wheelMatch(c, selectedWheel)) return false;
+    return selectedApp ? appMatch(c, selectedApp) : true;
+  });
+}
+
+// ---- Wheel ----
+const segG = document.getElementById("segments");
+WHEEL.forEach(function(p,i){
+  const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+  path.setAttribute("d", wedgePath(i));
+  path.setAttribute("class","seg");
+  path.setAttribute("data-id", p.id);
+  path.setAttribute("tabindex","0");
+  path.setAttribute("role","button");
+  path.setAttribute("aria-label", p.label);
+  path.addEventListener("mouseenter", function(){
+    path.classList.add("is-hover");
+    if (!path.classList.contains("is-selected")) path.style.transform = "scale(1.035)";
+  });
+  path.addEventListener("mouseleave", function(){
+    path.classList.remove("is-hover");
+    if (!path.classList.contains("is-selected")) path.style.transform = "scale(1)";
+  });
+  path.addEventListener("click", function(){ selectWheel(p.id); });
+  path.addEventListener("keydown", function(e){
+    if (e.key==="Enter" || e.key===" ") { e.preventDefault(); selectWheel(p.id); }
+  });
+  segG.appendChild(path);
+  const lp = labelPos(i);
+  const t = document.createElementNS("http://www.w3.org/2000/svg","text");
+  t.setAttribute("class","seg-label");
+  t.setAttribute("x", lp[0]); t.setAttribute("y", p.sub ? lp[1]-5 : lp[1]+3);
+  t.textContent = p.label;
+  segG.appendChild(t);
+  if (p.sub) {
+    const s = document.createElementNS("http://www.w3.org/2000/svg","text");
+    s.setAttribute("class","seg-sub");
+    s.setAttribute("x", lp[0]); s.setAttribute("y", lp[1]+8);
+    s.textContent = p.sub;
+    segG.appendChild(s);
+  }
+});
+function paintWheel(){
+  document.querySelectorAll(".seg").forEach(function(el){
+    var on = el.getAttribute("data-id") === selectedWheel;
+    el.classList.toggle("is-selected", on);
+    el.style.transform = on ? "scale(1.05)" : "scale(1)";
+  });
+  var p = WHEEL.find(function(x){ return x.id===selectedWheel; });
+  document.getElementById("filterNote").textContent = p ? ("Filtering · " + p.label) : "";
+}
+function selectWheel(id){
+  if (selectedWheel === id) { clearWheel(); return; }
+  selectedWheel = id; paintWheel(); render();
+}
+function clearWheel(){ selectedWheel = null; paintWheel(); render(); }
+document.getElementById("lensHub").addEventListener("click", clearWheel);
+document.getElementById("clearWheel").addEventListener("click", clearWheel);
+
+// ---- Application list (Recommend / Compare) ----
+const appList = document.getElementById("appList");
+RECS.forEach(function(r){
+  var b = document.createElement("button");
+  b.type="button"; b.className="app-btn"; b.dataset.id=r.id;
+  b.textContent = r.label;
+  b.addEventListener("click", function(){
+    selectedApp = (selectedApp === r.id && tab !== "recommend") ? null : r.id;
+    render();
+  });
+  appList.appendChild(b);
+});
+document.querySelectorAll(".tab").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    tab = btn.getAttribute("data-tab");
+    document.querySelectorAll(".tab").forEach(function(t){ t.classList.toggle("is-on", t===btn); });
+    render();
+  });
+});
+document.getElementById("scopeWrap").innerHTML = noteBox("scope", PAGE.scopeTitle, PAGE.scopeHtml);
+
+// ---- Cards ----
+function itemCard(c, opts){
+  opts = opts || {};
+  var html = '<div class="card '+(opts.cls||'')+'">';
+  if (opts.tag) html += '<div class="tag">'+esc(opts.tag)+'</div>';
+  html += '<h3>'+esc(c.name)+notListedTag(c)+'</h3>';
+  if (opts.why) html += '<p class="why">'+esc(opts.why)+'</p>';
+  html += '<div class="meta">';
+  PAGE.cardLines.forEach(function(l){ html += '<b>'+esc(l[0])+':</b> '+esc(val(c,l[1]))+'<br/>'; });
+  html += 'Status: '+statusHtml(c)+' · <a href="'+esc(c.source)+'" target="_blank" rel="noopener">Source</a>';
+  if (c.datasheet) html += ' · <a href="'+esc(c.datasheet)+'" target="_blank" rel="noopener">Datasheet</a>';
+  html += '</div>';
+  if (c.notes) html += '<div style="margin-top:8px">'+noteBox('item-'+c.id+(opts.tag||''), 'Verify note', esc(c.notes))+'</div>';
+  html += '</div>';
+  return html;
+}
+
+// ---- Edition matrix helpers (optional per page) ----
+function edRank(id){ var e = MATRIX.editions.find(function(x){ return x.id===id; }); return e ? e.rank : 999; }
+function edHas(edId, fkey){ var f = MATRIX.features.find(function(x){ return x.key===fkey; }); return !!f && f.has.indexOf(edId) >= 0; }
+function edCovers(edId, keys){ return keys.every(function(k){ return edHas(edId, k); }); }
+function featLabel(k){ var f = MATRIX.features.find(function(x){ return x.key===k; }); return f ? f.label : k; }
+function needsFor(rec){ if (!NEEDS[rec.id]) NEEDS[rec.id] = (rec.defaultNeeds||[]).slice(); return NEEDS[rec.id]; }
+function lowestEdition(keys){
+  var eds = MATRIX.editions.slice().sort(function(a,b){ return a.rank-b.rank; });
+  for (var i=0;i<eds.length;i++) if (edCovers(eds[i].id, keys)) return eds[i];
+  return null;
+}
+function nextEdition(ed){
+  var eds = MATRIX.editions.slice().sort(function(a,b){ return a.rank-b.rank; });
+  for (var i=0;i<eds.length;i++) if (eds[i].rank > ed.rank) return eds[i];
+  return null;
+}
+function addedBy(fromEd, toEd){
+  return MATRIX.features.filter(function(f){ return f.has.indexOf(toEd.id)>=0 && f.has.indexOf(fromEd.id)<0; }).map(function(f){ return f.label; });
+}
+function finderCard(rec){
+  var needs = needsFor(rec);
+  var html = '<div class="card"><h3>Which alignment features do you need?</h3>';
+  html += '<p class="why">Tick what the job needs. The lowest RotAlign edition that covers every tick is recommended (editions are upgradeable in the field).</p><div class="needs">';
+  MATRIX.needs.forEach(function(k){
+    html += '<label><input type="checkbox" class="need-cb" value="'+esc(k)+'"'+(needs.indexOf(k)>=0?' checked':'')+'/> '+esc(featLabel(k))+'</label>';
+  });
+  html += '</div><button type="button" class="need-reset" id="needReset">Clear ticks</button> <a href="#" id="toMatrix">Open edition matrix</a></div>';
+  return html;
+}
+function bindFinder(rec){
+  document.querySelectorAll(".need-cb").forEach(function(cb){
+    cb.addEventListener("change", function(){
+      var n = needsFor(rec), k = cb.value, i = n.indexOf(k);
+      if (cb.checked && i<0) n.push(k); if (!cb.checked && i>=0) n.splice(i,1);
+      render();
+    });
+  });
+  var r = document.getElementById("needReset"); if (r) r.addEventListener("click", function(){ NEEDS[rec.id] = []; render(); });
+  var m = document.getElementById("toMatrix"); if (m) m.addEventListener("click", function(e){ e.preventDefault(); goMatrix(); });
+}
+function goMatrix(){
+  tab = "compare"; cmpView = "matrix";
+  document.querySelectorAll(".tab").forEach(function(b){ b.classList.toggle("is-on", b.getAttribute("data-tab")==="compare"); });
+  render();
+}
+function finderRec(rec){
+  // returns a rec-like object with best/runner computed from ticked needs
+  var needs = needsFor(rec);
+  var best = lowestEdition(needs);
+  var out = Object.assign({}, rec);
+  var list = needs.map(featLabel);
+  out.bestId = best.id;
+  out.bestWhy = (needs.length ? 'Lowest edition covering: ' + list.join(', ') + '.' : 'No extra features ticked: entry edition covers standard horizontal alignment (short-flex coupling, Live Move H+V, soft foot, 8-point Active Clock, static/multiple feet, quality factor).') + (best.why ? ' ' + best.why : '');
+  var nx = nextEdition(best);
+  if (nx) { out.runnerId = nx.id; var add = addedBy(best, nx); out.runnerWhy = 'Next step up adds: ' + (add.length ? add.join(', ') : 'see matrix') + (nx.why ? '. ' + nx.why : '.'); }
+  else { out.runnerId = null; out.runnerWhy = ''; }
+  var covering = MATRIX.editions.filter(function(e){ return edCovers(e.id, needs) && e.id!==out.bestId && e.id!==out.runnerId; }).sort(function(a,b){ return a.rank-b.rank; }).map(function(e){ return e.id; });
+  out.suitableIds = [out.bestId].concat(out.runnerId?[out.runnerId]:[]).concat(covering).concat((rec.extraIds||[]).filter(function(id){ return covering.indexOf(id)<0; }));
+  return out;
+}
+
+function renderRecommend(){
+  var rec = recById(selectedApp) || RECS[0];
+  selectedApp = rec.id;
+  var useFinder = !!(MATRIX && rec.editionFinder);
+  if (useFinder) rec = finderRec(rec);
+  var best = byId(rec.bestId), runner = rec.runnerId ? byId(rec.runnerId) : null;
+  var suitable = rec.suitableIds.map(byId).filter(function(c){ return wheelMatch(c, selectedWheel); });
+  document.getElementById("sinceCount").textContent = rec.label;
+  document.getElementById("sinceHint").textContent = rec.need;
+  document.getElementById("resultsTitle").textContent = "Results · Recommend";
+  var html = useFinder ? finderCard(rec) : '';
+  if (wheelMatch(best, selectedWheel)) html += itemCard(best, {cls:"best", tag:"Best choice", why:rec.bestWhy});
+  else html += '<div class="card warn">Best fit ('+esc(best.name)+') is outside the selected wheel category.</div>';
+  if (runner) {
+    if (wheelMatch(runner, selectedWheel)) html += itemCard(runner, {cls:"runner", tag:"Runner-up", why:rec.runnerWhy});
+    else if (selectedWheel) html += '<div class="card warn">Runner-up ('+esc(runner.name)+') is outside the selected wheel category.</div>';
+  }
+  html += '<div class="card"><h3>Others suitable ('+suitable.length+')</h3>';
+  if (rec.tip) html += noteBox('tip-'+rec.id, 'Application tip', esc(rec.tip));
+  html += '<table class="spec"><thead><tr><th>'+esc(PAGE.itemNoun)+'</th>';
+  PAGE.recCols.forEach(function(col){ html += '<th>'+esc(col[0])+'</th>'; });
+  html += '<th>Status</th></tr></thead><tbody>';
+  suitable.forEach(function(c){
+    html += '<tr><td>'+esc(c.name)+notListedTag(c)+'</td>';
+    PAGE.recCols.forEach(function(col){ html += '<td>'+esc(val(c,col[1]))+'</td>'; });
+    html += '<td>'+esc(statusText(c))+'</td></tr>';
+  });
+  html += '</tbody></table></div>';
+  document.getElementById("results").innerHTML = html;
+  if (useFinder) bindFinder(recById(rec.id));
+}
+
+function browseItems(){
+  var base = ITEMS.filter(function(c){ return wheelMatch(c, selectedWheel); });
+  if (browseApp === "all") return sortAll(base);
+  return sortAll(base.filter(function(c){ return appMatch(c, browseApp); }));
+}
+function renderBrowse(){
+  var items = browseItems();
+  if (!items.length) items = sortAll(ITEMS.filter(function(c){ return wheelMatch(c, selectedWheel); }));
+  if (!items.length) items = sortAll(ITEMS);
+  if (!items.some(function(c){ return c.id===browseId; })) browseId = items[0].id;
+  var selected = byId(browseId);
+  var appLabel = browseApp === "all" ? PAGE.allLabel : ((recById(browseApp)||{}).label || "");
+  document.getElementById("sinceCount").textContent = items.length + " " + PAGE.itemNounPlural + " · " + appLabel;
+  document.getElementById("sinceHint").textContent = "Browse published OEM specs. Click a row or use the detail picker.";
+  document.getElementById("resultsTitle").textContent = "Results · Browse";
+  var html = '';
+  if (browseApp === "all") html += '<span class="sort-label">'+esc(PAGE.sortLabel)+(selectedWheel?' Wheel filter applied.':'')+'</span>';
+  else html += '<span class="sort-label">Same sort basis as "All": '+esc(PAGE.sortShort)+'</span>';
+  var opts = items.map(function(c){ return '<option value="'+c.id+'"'+(c.id===browseId?' selected':'')+'>'+esc(c.name)+'</option>'; }).join("");
+  html += '<div class="toolbar"><div><label for="browsePick">Detail card</label><select id="browsePick">'+opts+'</select></div></div>';
+  html += '<table class="spec"><thead><tr><th>'+esc(PAGE.itemNoun)+'</th>';
+  PAGE.browseCols.forEach(function(col){ html += '<th>'+esc(col[0])+'</th>'; });
+  html += '<th>Status</th></tr></thead><tbody>';
+  items.forEach(function(c){
+    html += '<tr data-id="'+c.id+'" style="cursor:pointer'+(c.id===browseId?';background:#fff6c2':'')+'"><td>'+esc(c.name)+notListedTag(c)+'</td>';
+    PAGE.browseCols.forEach(function(col){ html += '<td>'+esc(val(c,col[1]))+'</td>'; });
+    html += '<td>'+esc(statusText(c))+'</td></tr>';
+  });
+  html += '</tbody></table>';
+  html += itemCard(selected, {tag:"Detail"});
+  var vt = '<table class="spec"><thead><tr><th>Item</th><th>Status</th></tr></thead><tbody>';
+  VERIFY.forEach(function(row){ vt += '<tr><td>'+esc(row[0])+'</td><td>'+esc(row[1])+'</td></tr>'; });
+  vt += '</tbody></table>';
+  html += noteBox('verify-table', 'Verify-before-quoting notes ('+VERIFY.length+')', vt);
+  document.getElementById("results").innerHTML = html;
+  document.getElementById("browsePick").addEventListener("change", function(e){ browseId = e.target.value; render(); });
+  document.querySelectorAll("table.spec tbody tr[data-id]").forEach(function(tr){
+    tr.addEventListener("click", function(){ browseId = tr.getAttribute("data-id"); render(); });
+  });
+}
+
+function renderMatrix(){
+  document.getElementById("sinceCount").textContent = MATRIX.title;
+  document.getElementById("sinceHint").textContent = MATRIX.hint;
+  document.getElementById("resultsTitle").textContent = "Results · Compare";
+  var groups = MATRIX.groups;
+  var html = viewToggle();
+  html += '<table class="mx"><thead><tr><th class="corner" rowspan="2">Feature</th>';
+  groups.forEach(function(g){ html += '<th class="grp-'+g.cls+'" colspan="'+g.ids.length+'">'+esc(g.label)+'</th>'; });
+  html += '</tr><tr>';
+  groups.forEach(function(g){ g.ids.forEach(function(id){ var e = MATRIX.editions.find(function(x){return x.id===id;}); html += '<th class="ed-'+g.cls+'">'+esc(e.label)+'</th>'; }); });
+  html += '</tr></thead><tbody>';
+  var firstElite = groups[1] ? groups[1].ids[0] : null;
+  (MATRIX.hardware||[]).forEach(function(r){
+    html += '<tr class="hw"><td class="f"><b>'+esc(r.label)+'</b></td>';
+    groups.forEach(function(g){ html += '<td colspan="'+g.ids.length+'"'+(g.ids[0]===firstElite?' class="sep"':'')+'>'+esc(r[g.cls])+'</td>'; });
+    html += '</tr>';
+  });
+  MATRIX.features.forEach(function(f){
+    html += '<tr><td class="f">'+esc(f.label)+(f.ast?' <span class="mx-ast">'+esc(f.ast)+'</span>':'')+'</td>';
+    groups.forEach(function(g){ g.ids.forEach(function(id){
+      html += '<td'+(id===firstElite?' class="sep"':'')+'>'+(f.has.indexOf(id)>=0?'<span class="ck" aria-label="included">✓</span>':'<span class="no" aria-label="not included">—</span>')+'</td>';
+    }); });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  html += noteBox('mx-source', 'Matrix source & notes', MATRIX.sourceHtml);
+  document.getElementById("results").innerHTML = html;
+  bindToggle();
+}
+function viewToggle(){
+  if (!MATRIX) return '';
+  return '<div class="view-toggle"><button type="button" data-view="side"'+(cmpView==="side"?' class="is-on"':'')+'>Side-by-side</button><button type="button" data-view="matrix"'+(cmpView==="matrix"?' class="is-on"':'')+'>'+esc(MATRIX.toggleLabel)+'</button></div>';
+}
+function bindToggle(){
+  document.querySelectorAll(".view-toggle button").forEach(function(b){ b.addEventListener("click", function(){ cmpView = b.getAttribute("data-view"); render(); }); });
+}
+function renderCompare(){
+  if (MATRIX && cmpView === "matrix") { renderMatrix(); return; }
+  document.getElementById("sinceCount").textContent = "Side-by-side";
+  document.getElementById("sinceHint").textContent = "Pick up to three " + PAGE.itemNounPlural + ". Wheel / application filters shrink the pick lists.";
+  document.getElementById("resultsTitle").textContent = "Results · Compare";
+  var pool = sortAll(filteredItems());
+  if (pool.length < 2) pool = sortAll(ITEMS.filter(function(c){ return wheelMatch(c, selectedWheel); }));
+  if (pool.length < 2) pool = sortAll(ITEMS);
+  compareIds = compareIds.map(function(id, i){
+    return pool.some(function(c){ return c.id===id; }) ? id : (pool[i] ? pool[i].id : pool[0].id);
+  });
+  function optHtml(sel){ return pool.map(function(c){ return '<option value="'+c.id+'"'+(c.id===sel?' selected':'')+'>'+esc(c.name)+'</option>'; }).join(""); }
+  var html = viewToggle() + '<div class="toolbar">';
+  [0,1,2].forEach(function(i){ html += '<div><label for="c'+i+'">'+esc(PAGE.itemNoun)+' '+(i+1)+'</label><select id="c'+i+'">'+optHtml(compareIds[i])+'</select></div>'; });
+  html += '</div>';
+  var seen = {}, cols = [];
+  compareIds.map(byId).forEach(function(c){ if (c && !seen[c.id]) { seen[c.id]=1; cols.push(c); } });
+  html += '<table class="spec"><thead><tr><th>Spec</th>';
+  cols.forEach(function(c){ html += '<th>'+esc(c.name)+notListedTag(c)+'</th>'; });
+  html += '</tr></thead><tbody>';
+  PAGE.compareRows.forEach(function(row){
+    html += '<tr><th>'+esc(row[0])+'</th>';
+    cols.forEach(function(c){
+      var v;
+      if (row[1] === "_status") v = statusText(c);
+      else if (row[1] === "_yt") v = ytText(c);
+      else v = val(c, row[1]);
+      html += '<td>'+esc(v)+'</td>';
+    });
+    html += '</tr>';
+  });
+  html += '<tr><th>Source</th>';
+  cols.forEach(function(c){
+    html += '<td><a href="'+esc(c.source)+'" target="_blank" rel="noopener">OEM page</a>'+(c.datasheet?' · <a href="'+esc(c.datasheet)+'" target="_blank" rel="noopener">Datasheet</a>':'')+'</td>';
+  });
+  html += '</tr></tbody></table>';
+  var notes = cols.filter(function(c){ return c.notes; });
+  if (notes.length) html += noteBox('cmp-notes-'+cols.map(function(c){return c.id;}).join('-'), 'Verify notes for these '+PAGE.itemNounPlural+' ('+notes.length+')',
+    notes.map(function(c){ return '<b>'+esc(c.name)+':</b> '+esc(c.notes); }).join('<br/>'));
+  document.getElementById("results").innerHTML = html;
+  [0,1,2].forEach(function(i){
+    document.getElementById("c"+i).addEventListener("change", function(e){ compareIds[i] = e.target.value; render(); });
+  });
+  bindToggle();
+}
+
+function syncWheelDropdown(){
+  var wrap = document.getElementById("mainWrap");
+  var dd = document.getElementById("wheelDropdown");
+  var sel = document.getElementById("appSelect");
+  var useDd = (tab === "browse");
+  wrap.classList.toggle("two-col", useDd || (tab === "compare" && !!MATRIX && cmpView === "matrix"));
+  dd.style.display = useDd ? "" : "none";
+  if (!useDd) return;
+  var html = '<option value="all"'+(browseApp==="all"?" selected":"")+'>'+esc(PAGE.allOption)+'</option>';
+  RECS.forEach(function(r){ html += '<option value="'+r.id+'"'+(browseApp===r.id?" selected":"")+'>'+esc(r.label)+'</option>'; });
+  sel.innerHTML = html;
+}
+document.getElementById("appSelect").addEventListener("change", function(e){ browseApp = e.target.value; render(); });
+
+function render(){
+  document.querySelectorAll(".app-btn").forEach(function(b){ b.classList.toggle("is-on", b.dataset.id === selectedApp); });
+  syncWheelDropdown();
+  if (tab === "recommend") renderRecommend();
+  else if (tab === "browse") renderBrowse();
+  else renderCompare();
+}
+
+// Test hooks: #tab=browse&app=all · #tab=recommend&app=<id> · #tab=compare&ids=a,b,c · &wheel=<id> · &item=<id>
+(function applyHash(){
+  var h = new URLSearchParams(String(location.hash||"").replace(/^#/,""));
+  var t = h.get("tab");
+  if (t && ["recommend","browse","compare"].indexOf(t) >= 0) {
+    tab = t;
+    document.querySelectorAll(".tab").forEach(function(b){ b.classList.toggle("is-on", b.getAttribute("data-tab")===t); });
+  }
+  var a = h.get("app");
+  if (a) { if (tab === "browse") browseApp = (a === "all" || recById(a)) ? a : "all"; else if (recById(a)) selectedApp = a; }
+  if (h.get("ids") && !a) selectedApp = null;
+  if (h.get("ids")) h.get("ids").split(",").slice(0,3).forEach(function(id, i){ if (ITEMS.some(function(c){return c.id===id;})) compareIds[i] = id; });
+  if (MATRIX && h.get("view") === "matrix") cmpView = "matrix";
+  if (MATRIX && h.get("needs") && recById(selectedApp)) NEEDS[selectedApp] = h.get("needs").split(",").filter(function(k){ return MATRIX.needs.indexOf(k)>=0; });
+  if (h.get("item") && ITEMS.some(function(c){return c.id===h.get("item");})) browseId = h.get("item");
+  if (h.get("wheel") && WHEEL.some(function(w){return w.id===h.get("wheel");})) { selectedWheel = h.get("wheel"); paintWheel(); }
+})();
+render();
+
+</script>
+</body>
+</html>

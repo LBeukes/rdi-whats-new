@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en-ZA">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Fluke Vibration & Alignment Selector — Yellotec</title>
+<link rel="stylesheet" href="../assets/yt-template.css"/>
+<style>
+/* Page-specific styles (shared rules live in ../assets/yt-template.css) */
+
+.app-list { display:flex; flex-direction:column; gap:6px; max-height:560px; overflow:auto; padding-right:2px; }
+.app-btn { text-align:left; padding:10px 12px; border:1.5px solid var(--border); border-radius:8px; background:var(--white); color:var(--black); font-size:0.84rem; cursor:pointer; font-family:inherit; }
+.app-btn:hover { border-color:var(--black); background:#fffce8; }
+.app-btn.is-on { background:var(--yellow); border-color:var(--black); font-weight:700; }
+.results-body { flex:1; overflow:auto; max-height:640px; padding-right:4px; }
+.card { border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin:0 0 10px; background:#fff; }
+.card.best { border-left:4px solid var(--yellow); background:#fffceb; }
+.card.runner { border-left:4px solid var(--orange); }
+.card h3 { margin:0 0 4px; color:var(--black); font-size:0.95rem; }
+.card .tag { display:inline-block; font-size:0.68rem; font-weight:700; background:var(--black); color:#FFFFFF; border-left:3px solid var(--yellow); padding:2px 7px; border-radius:999px; margin-bottom:6px; }
+.card .why { margin:0 0 8px; font-size:0.82rem; line-height:1.4; }
+.card .meta { font-size:0.75rem; color:var(--soft); line-height:1.45; }
+.card .meta b { color:var(--charcoal); }
+.card a { color:var(--black); font-weight:700; text-decoration:underline; }
+.card a:hover { color:var(--orange); }
+.card.warn { border-color:var(--orange); background:#fff8f0; font-size:0.78rem; }
+table.spec { width:100%; border-collapse:collapse; font-size:0.78rem; margin:8px 0; }
+table.spec th, table.spec td { border:1px solid var(--border); padding:6px 8px; text-align:left; vertical-align:top; }
+table.spec th { background:var(--lt); color:var(--black); font-weight:700; }
+table.spec tr:nth-child(even) td { background:#fcfcfc; }
+table.spec a { color:var(--black); font-weight:700; }
+.status-disc { color:#B34700; font-weight:700; }
+.toolbar { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 10px; align-items:end; }
+.toolbar label { display:block; font-size:0.72rem; color:var(--soft); margin-bottom:3px; }
+.toolbar select { padding:8px 10px; font-size:0.88rem; font-family:inherit; border:1.5px solid var(--black); border-radius:8px; color:var(--black); background:var(--white); min-width:160px; max-width:260px; }
+.sort-label { display:inline-block; font-size:0.72rem; color:var(--black); background:var(--lt); border:1px solid var(--border); border-radius:4px; padding:3px 8px; margin:0 0 8px; line-height:1.4; }
+.scope-wrap { width:100%; margin-top:10px; }
+.view-toggle { display:flex; gap:6px; margin:0 0 10px; }
+.view-toggle button { flex:1; padding:8px 10px; border:1.5px solid var(--black); border-radius:8px; background:var(--white); color:var(--black); font-weight:700; font-size:0.8rem; cursor:pointer; font-family:inherit; }
+.view-toggle button.is-on { background:var(--yellow); }
+table.mx { width:100%; border-collapse:collapse; font-size:0.74rem; margin:6px 0 8px; }
+table.mx th, table.mx td { border:1px solid var(--border); padding:5px 6px; text-align:center; vertical-align:middle; }
+table.mx td.f { text-align:left; color:var(--black); }
+table.mx th.grp-core { background:var(--yellow); color:var(--black); font-size:0.8rem; }
+table.mx th.grp-elite { background:var(--black); color:#FFFFFF; font-size:0.8rem; }
+table.mx th.ed-core { background:#FFF1B3; color:var(--black); }
+table.mx th.ed-elite { background:#DADADA; color:var(--black); }
+table.mx th.corner { background:var(--black); color:#FFFFFF; text-align:left; }
+table.mx th.ed-pick { outline:3px solid var(--black); outline-offset:-3px; }
+table.mx td.sep { border-left:3px solid var(--black); }
+table.mx tr.hw td { background:#F7F7F7; font-size:0.7rem; }
+.ck { display:inline-block; width:18px; height:18px; line-height:18px; border-radius:50%; background:var(--yellow); color:var(--black); font-weight:800; font-size:0.72rem; }
+.no { color:#9A9A9A; }
+.mx-ast { font-size:0.68rem; color:var(--soft); }
+.needs { display:grid; grid-template-columns:1fr 1fr; gap:4px 10px; margin:6px 0 4px; font-size:0.78rem; }
+.needs label { display:flex; gap:6px; align-items:flex-start; cursor:pointer; color:var(--black); }
+.needs input { accent-color:#000000; margin-top:2px; }
+.need-reset { font-size:0.72rem; border:1px solid var(--border); background:var(--white); border-radius:6px; padding:3px 8px; cursor:pointer; font-family:inherit; }
+
+@media (max-width:1000px) { .results-body, .app-list { max-height:none; } }
+
+</style>
+</head>
+<body>
+<div class="topbar"></div>
+<header class="yt-header">
+  <img class="yt-logo" src="../assets/yellotec-logo-landscape-black.svg" alt="Yellotec"/>
+  <div class="titles">
+    <h1>Fluke Vibration &amp; Laser Alignment Selector</h1>
+    <p class="sub">Recommend, browse and compare Fluke Reliability vibration and alignment tools — Yellotec sales tool. Verify the data sheet before quoting.</p>
+  </div>
+  <div class="yt-partner">
+    <img src="../assets/fluke-logo.svg" alt="Fluke"/>
+    <small>Yellotec · Fluke Reliability partner</small>
+  </div>
+</header>
+<nav class="tabs" role="tablist" aria-label="Selector modes">
+  <button type="button" class="tab is-on" data-tab="recommend" role="tab">Recommend</button>
+  <button type="button" class="tab" data-tab="browse" role="tab">Browse</button>
+  <button type="button" class="tab" data-tab="compare" role="tab">Compare</button>
+</nav>
+<main class="wrap" id="mainWrap">
+  <section class="panel" id="lensPanel">
+    <h2>Tool categories</h2>
+    <p class="lens-hint">Hover or click a segment to filter</p>
+    <div class="lens-wrap">
+      <svg class="lens-svg" id="lens" viewBox="0 0 320 320" role="img" aria-label="Tool categories">
+        <defs>
+          <radialGradient id="glassGrad" cx="40%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.55"/>
+            <stop offset="55%" stop-color="#888888" stop-opacity="0.15"/>
+            <stop offset="100%" stop-color="#000000" stop-opacity="0.35"/>
+          </radialGradient>
+        </defs>
+        <circle class="lens-ring-outer" cx="160" cy="160" r="152"/>
+        <circle class="lens-ring" cx="160" cy="160" r="148"/>
+        <g id="segments"></g>
+        <circle class="lens-glass" cx="160" cy="160" r="138"/>
+        <circle class="lens-hub" id="lensHub" cx="160" cy="160" r="28"/>
+        <text class="lens-hub-i" x="160" y="161">i</text>
+      </svg>
+      <p class="filter-note" id="filterNote"></p>
+      <button type="button" class="clear-btn" id="clearWheel">Clear filter</button>
+      <div class="wheel-dropdown" id="wheelDropdown" style="display:none">
+        <label for="appSelect" id="appSelectLabel">Application</label>
+        <select id="appSelect"></select>
+      </div>
+      <div class="scope-wrap" id="scopeWrap"></div>
+    </div>
+  </section>
+  <section class="panel col-apps">
+    <h2>Applications</h2>
+    <div class="app-list" id="appList"></div>
+  </section>
+  <section class="panel">
+    <h2 id="resultsTitle">Results</h2>
+    <div class="results-head">
+      <p class="count" id="sinceCount">—</p>
+      <p class="hint" id="sinceHint">Pick an application or category to start.</p>
+    </div>
+    <div class="results-body" id="results"></div>
+    <a class="cta" href="mailto:sales@yellotec.com?subject=Fluke%20vibration%20%2F%20alignment%20recommendation">Ask Yellotec<small>sales@yellotec.com</small></a>
+  </section>
+</main>
+<footer class="footer">
+  <span>Specs from fluke.com product pages and Fluke data sheets (checked 13 Nov 2026). Figures Fluke does not publish are flagged, never invented. Vibration and alignment only — acoustic, electrical and thermal tools excluded. Discontinued models labelled.</span>
+  <span>Yellotec · Yellow Technical Services (Pty) Ltd · www.yellotec.co.za</span>
+</footer>
+<div class="bottombar"></div>
+<script>
+const PAGE = {"itemNoun": "Tool", "itemNounPlural": "tools", "allLabel": "All tools", "allOption": "All tools (entry-level → advanced)", "sortLabel": "Sorted smallest → largest by capability tier (1 = basic screening/belt tools … 6 = 20-channel online system), assigned from Fluke's own product positioning; vibration before alignment within a tier; discontinued models listed last. Fluke does not publish prices.", "sortShort": "capability tier (entry → advanced), discontinued last.", "cardLines": [["Family", "family"], ["Sensing", "channels"], ["Range / resolution", "freq"], ["Hazardous area", "hazard"], ["Connectivity", "connect"]], "recCols": [["Family", "family"], ["Range / resolution", "freq"]], "browseCols": [["Family", "family"], ["Sensing", "channels"], ["Range / resolution", "freq"], ["Hazardous area", "hazard"]], "compareRows": [["Family", "family"], ["Status", "_status"], ["Measures / functions", "measures"], ["Sensing", "channels"], ["Range & resolution", "freq"], ["Capacity / limits", "range"], ["Hazardous area / IP", "hazard"], ["Connectivity / software", "connect"], ["Power / battery", "power"], ["Extras", "extras"], ["Typical use", "typical"], ["Yellotec listing", "_yt"]], "defaultApp": "route", "defaultCompare": ["vs2", "vx3", "vx2"], "defaultBrowse": "vs2", "scopeTitle": "Scope of this selector", "scopeHtml": "<b>In scope:</b> Fluke Reliability vibration tools (screening meters, testers, route collectors, analyzers/balancers, wireless sensors, online VIBGUARD systems) and laser alignment (shaft and belt/pulley), as listed under fluke.com › Condition monitoring › Vibration monitoring / Laser alignment, including former Prüftechnik and Azima DLI products.<br/><b>Excluded on purpose:</b> acoustic/ultrasonic imagers (ii900/ii910/ii915), motor, insulation and power analyzers, and all thermal imagers, to avoid overlap with Yellotec's Teledyne FLIR line. Software-only items (eMaint, OMNITREND, ARC 4.0) and accessories (shims, brackets) are mentioned only as part of a system.<br/><b>Status:</b> discontinued models are kept, labelled, for installed-base conversations."};
+const ITEMS = [{"id": "f805", "name": "Fluke 805 FC Vibration Meter", "family": "Vibration screening meter", "wheel": "screening", "tier": 1, "fam": 1, "measures": "Overall vibration (acceleration, velocity, displacement), Crest Factor+ bearing condition, IR surface temperature", "channels": "Single-axis sensor tip (optional external accelerometer, 10 Hz–1 kHz)", "freq": "Overall 10 Hz–1 kHz; CF+ 4–20 kHz", "range": "0.01–50 g; ±5% at 100 Hz; IR −20 to 200 °C (±2 °C)", "hazard": "No Ex rating stated", "connect": "USB; Fluke Connect app; ISO 10816 severity scale; 3,500-reading memory", "power": "Not published on product page", "extras": "Four-level severity (good → unacceptable); pressure-guide lights; flashlight", "typical": "Front-line go/no-go checks of bearings and overall machine health", "source": "https://www.fluke.com/en-us/product/mechanical-maintenance/vibration-analysis/fluke-805-fc", "ytListed": false, "wheelExtra": [], "sortKey": [0, 1, 1, 0]}, {"id": "f810", "name": "Fluke 810 Vibration Tester", "family": "Diagnostic vibration tester", "wheel": "screening", "wheelExtra": ["analysis"], "tier": 2, "fam": 1, "measures": "On-board diagnosis of unbalance, looseness, misalignment and bearing faults with 4-level severity and repair advice; spectra", "channels": "Triaxial accelerometer (4-channel, 24-bit A/D) + BNC single-axis input", "freq": "Usable bandwidth 2 Hz–20 kHz; 800-line FFT", "range": "Sensor 80 g peak, 100 mV/g ±5%; machine speed 200–12,000 rpm", "hazard": "No Ex rating stated", "connect": "Mini-USB; 2 GB internal + microSD slot", "power": "Li-ion 14.8 V, 2.55 Ah; about 8 h", "extras": "Covers motors, fans, belts, gearboxes, pumps, compressors, spindles; 1.9 kg", "typical": "Technicians who need a plain-language fault answer on the first measurement, without history", "source": "https://www.fluke.com/en/product/mechanical-maintenance/vibration-analysis/fluke-810", "ytListed": false, "sortKey": [0, 2, 1, 0]}, {"id": "vs2", "name": "VIBSCANNER 2", "family": "Route data collector (triaxial)", "wheel": "route", "tier": 3, "fam": 2, "measures": "Triaxial overall values and spectra, shock pulse, RPM finder (speed from signal), stroboscope", "channels": "3 synchronous channels (X/Y/Z) with triaxial sensor", "freq": "Z 0–50 kHz; X/Y 0–10 kHz; up to 131 kHz sampling per channel", "range": "Dynamic range 109.5 dB; shock pulse −10 to 80 dBsv (±2 dBsv); DIN ISO 2954", "hazard": "Non-Ex (see VIBSCANNER 2 EX)", "connect": "RFID measurement-point ID, Wi-Fi; OMNITREND Center", "power": "Li-ion 72 Wh; about 12 h continuous", "extras": "10.9 cm glove-capable touchscreen; about 1.0 kg", "typical": "Fast route-based PdM data collection by non-specialists", "source": "https://www.fluke.com/en-us/product/condition-monitoring/vibration/handheld-vibration-analyzers/fluke-vibscanner-2", "datasheet": "https://media.fluke.com/91d22f72-2a6a-483d-b74f-b3e6018a2c9b_original%20file.pdf", "ytListed": true, "wheelExtra": [], "sortKey": [0, 3, 2, 0]}, {"id": "vs2ex", "name": "VIBSCANNER 2 EX", "family": "Route data collector (triaxial, Ex)", "wheel": "route", "tier": 3, "fam": 2.1, "measures": "As VIBSCANNER 2: triaxial overall values and spectra, shock pulse, RPM finder", "channels": "3 synchronous channels (X/Y/Z) with triaxial sensor", "freq": "Z 0–50 kHz; X/Y 0–10 kHz; up to 131 kHz sampling per channel", "range": "Dynamic range 109.5 dB; shock pulse −10 to 80 dBsv", "hazard": "ATEX, IECEx, NEC 500/505, CEC (marking: see Fluke certificate); operation 0–50 °C", "connect": "RFID (Ex transponders), Wi-Fi; OMNITREND Center", "power": "Li-ion 50 Wh; about 10 h continuous", "extras": "Explosion-protected version for hazardous-area routes", "typical": "Route-based vibration rounds in petrochemical, gas and other Ex zones", "source": "https://www.fluke.com/en/product/condition-monitoring/vibration/vibscanner-2-ex", "datasheet": "https://media.fluke.com/91d22f72-2a6a-483d-b74f-b3e6018a2c9b_original%20file.pdf", "notes": "Specs taken from the shared VIBSCANNER 2 / 2 EX technical data sheet (EX values where listed). Confirm exact Ex marking on the ATEX certificate before quoting for a zone.", "ytListed": false, "wheelExtra": [], "sortKey": [0, 3, 2.1, 0]}, {"id": "vx2", "name": "VIBXPERT II", "family": "Vibration analyzer / balancer", "wheel": "analysis", "wheelExtra": ["route"], "tier": 4, "fam": 3, "measures": "Route collection, FFT and time-waveform analysis, 1- and 2-plane field balancing, shock pulse, type-K temperature, data logging", "channels": "1- or 2-channel packages", "freq": "DC–51.2 kHz (acceleration from 0.5 Hz); up to 131 kHz sampling per channel", "range": "Dynamic range 96 dB (measurement) / 136 dB (total); RPM 10–200,000 min⁻¹", "hazard": "Standard unit: no Ex rating (datasheet references an intrinsically safe EX version)", "connect": "OMNITREND Center; VIBCODE transducer support", "power": "Li-ion rechargeable pack", "extras": "VGA colour display; about 1.1 kg", "typical": "Analysts who collect, analyse and balance with one instrument", "source": "https://www.fluke.com/en/product/condition-monitoring/vibration/handheld-vibration-analyzers/fluke-vibxpert-ii", "datasheet": "https://media.fluke.com/2b1176b9-7680-41ea-bea0-b3e60179d8a7_original%20file.pdf", "ytListed": true, "sortKey": [0, 4, 3, 0]}, {"id": "vx3", "name": "Fluke VibXpert 3", "family": "Vibration analyzer / balancer (6-channel)", "wheel": "analysis", "wheelExtra": ["route"], "tier": 5, "fam": 3, "measures": "Real-time FFT, phase, time waveform and envelope; guided field balancing; route collection; transient capture up to 5 min", "channels": "6 synchronous channels; 24-bit A/D", "freq": "Not published on product page (see Fluke VibXpert 3 data sheet)", "range": "Not published on product page", "hazard": "No Ex rating stated; IP65 housing", "connect": "Wi-Fi; Fluke Condition Monitoring; built-in reports", "power": "'All-day battery' (hours not published on product page)", "extras": "Also sold as VibXpert 3 Balancer", "typical": "Complex balancing and multi-point diagnostics on critical rotating assets", "source": "https://www.fluke.com/en-us/product/condition-monitoring/vibration/handheld-vibration-analyzers/fluke-vibxpert-3", "notes": "Frequency range, sampling and battery hours are not stated on the fluke.com product page; the Fluke data sheet link on the page could not be retrieved this pass. Confirm on the datasheet before quoting.", "ytListed": true, "sortKey": [0, 5, 3, 0]}, {"id": "trio", "name": "Azima TRIO handheld analyzer", "family": "AI-assisted vibration data collector", "wheel": "analysis", "wheelExtra": ["route"], "tier": 4, "fam": 3.5, "measures": "X/Y/Z collection with a single command; multiple frequency ranges; time and demodulated vibration tests", "channels": "Triaxial (channel count not published on fluke.com)", "freq": "Not published on fluke.com", "range": "Not published on fluke.com", "hazard": "'Hazloc rated as standard' per fluke.com (marking not published)", "connect": "Bluetooth; Azima WATCHMAN AI diagnostics (1,200 fault types), analyst services", "power": "Not published on fluke.com", "extras": "Rental option offered by Fluke", "typical": "Plants that want automated AI diagnosis and optional Azima analyst support", "source": "https://www.fluke.com/en-us/products/condition-monitoring/vibration/handheld-vibration-analyzers", "notes": "fluke.com describes the TRIO family but publishes no model numbers or specs. Third-party listings were not used. Request the Fluke/Azima datasheet before quoting. Yellotec has an Azima DLI article but no TRIO product page.", "ytListed": false, "sortKey": [0, 4, 3.5, 0]}, {"id": "accel310", "name": "Azima Accel 310 wireless sensor (Watchman AIR)", "family": "Wireless vibration sensor", "wheel": "wireless", "tier": 4, "fam": 4, "measures": "High-res triaxial spectra, Impact Demod waveform/peak, acceleration & velocity RMS/peak, crest factor, surface temperature", "channels": "Triaxial or in-line axis", "freq": "Flat 10–6,300 Hz (±3 dB); FFT detectable to 10.4 kHz; 26.7 kHz sampling; 0.24 Hz bins at 1,600 lines", "range": "±16 g; 16-bit effective; surface temperature −40 to 105 °C (±0.3 °C)", "hazard": "ATEX II 2 G Ex ib IIC T4 (Zone 1/2); US/Canada Class I Div 2; IP68", "connect": "2.4 GHz Wirepas mesh → Accel gateway (Wi-Fi, Ethernet, LTE-M / NB-IoT) → PredictivePortal / WATCHMAN AI", "power": "3.6 V Li-SOCl₂; expected life >3 years", "extras": "129 g; adhesive-pad or stud mount; gateway standard (IP20) or industrial (IP66/67)", "typical": "Always-on monitoring of motors, pumps, fans, gearboxes with automated diagnosis", "source": "https://www.fluke.com/en/products/condition-monitoring/vibration", "notes": "Detailed specs from Fluke technical data sheet 6014076a-en (Watchman AIR, 09/2023); the fluke.com page gives headline features only (3-year battery, triaxial, IP/Ex rated). Yellotec hosts this datasheet but has no product page.", "ytListed": false, "wheelExtra": [], "sortKey": [0, 4, 4, 0]}, {"id": "f3561", "name": "Fluke 3561 FC Vibration Sensor", "family": "Wireless vibration sensor (overall)", "wheel": "wireless", "tier": 3, "fam": 4, "measures": "Overall triaxial vibration (acceleration, velocity) and surface temperature; FOVS severity alarms", "channels": "Triaxial", "freq": "10 Hz–1 kHz; 25.6 kHz sampling; one reading every 120 s", "range": "±32 g; −30 to 80 °C", "hazard": "No Ex rating stated; IP67", "connect": "BLE 4.1 to 3502 FC gateway (Wi-Fi); Fluke Connect Condition Monitoring", "power": "3.6 V 2,400 mAh lithium; 3 years typical", "extras": "40 g; 61.5 × 24 mm", "typical": "Installed base: low-cost overall-vibration trending", "source": "https://www.fluke.com/en-us/product/condition-monitoring/vibration/3561-vibration-sensor", "datasheet": "https://media.fluke.com/b6250069-a9e2-4325-9e5d-b106006963cf_original%20file.pdf", "status": "Discontinued (Fluke suggests 3563)", "ytListed": false, "wheelExtra": [], "sortKey": [1, 3, 4, 0]}, {"id": "f3563", "name": "Fluke 3563 Analysis Vibration Sensor", "family": "Wireless vibration sensor (analysis)", "wheel": "wireless", "tier": 4, "fam": 4, "measures": "RMS and pk-pk velocity/acceleration, time waveform, temperature, bearing severity bands", "channels": "Triaxial: piezo Z axis + 2 MEMS (X/Y)", "freq": "Z 2 Hz–10 kHz; X/Y 0–1 kHz; 18.5–62.5 kHz sampling", "range": "Z ±50 g; X/Y ±16 g; −20 to 85 °C", "hazard": "No Ex rating stated; IP67", "connect": "2.4 GHz to 3503 gateway (Wi-Fi / Ethernet / PoE, up to 20 sensors, ~100 m line of sight); eMaint Condition Monitoring", "power": "6 × 3.6 V ½AA Li-SOCl₂; at least 1 year (10-min overalls, hourly waveform)", "extras": "199.5 g; screw or epoxy mount", "typical": "Installed base: wireless analysis on production-critical assets", "source": "https://www.fluke.com/en-us/product/condition-monitoring/vibration/3563", "status": "Discontinued (no successor named on fluke.com)", "ytListed": false, "wheelExtra": [], "sortKey": [1, 4, 4, 0]}, {"id": "vgc", "name": "VIBGUARD compact", "family": "Online condition monitoring (6-channel)", "wheel": "online", "tier": 5, "fam": 5, "measures": "Time signals, envelope, up to 6 characteristic values (e.g. vibration, bearing condition); Intelligent Event Recorder", "channels": "6 dynamic analog inputs (ICP sensors or voltage process signals)", "freq": "Not published on product page (see VIBGUARD compact data sheet)", "range": "Not published on product page", "hazard": "No Ex rating stated; IP65 compact housing or cabinet module", "connect": "MQTT; Wi-Fi hub available; OMNITREND Asset View (browser)", "power": "Not published on product page", "extras": "Suited to extruders, centrifuges, turbocompressors, vacuum pumps, large fans, mill stands", "typical": "Continuous diagnostics on a single critical, highly dynamic machine", "source": "https://www.fluke.com/en-us/product/condition-monitoring/vibration/vibguard-compact", "ytListed": true, "wheelExtra": [], "sortKey": [0, 5, 5, 0]}, {"id": "vgiiot", "name": "VIBGUARD IIoT", "family": "Online condition monitoring (12/16/20-channel)", "wheel": "online", "tier": 6, "fam": 5, "measures": "Time signal, overall values, FFT, shock pulse, orbits, torque; frequency-band alarms and trending", "channels": "12, 16 or 20 synchronous channels + 2 tacho and 4 digital inputs", "freq": "131 kHz sampling / 50 kHz bandwidth; 110 dB dynamic range at 24 bit", "range": "See data sheet (process and vibration channel ranges)", "hazard": "No Ex rating stated; ambient −20 to 60 °C", "connect": "Ethernet (TCP/IP), Modbus TCP/RTU, MQTT; OMNITREND", "power": "24 ±6 VDC / 0.5 A", "extras": "Can take buffered outputs from machine-protection systems for turbomachinery analysis", "typical": "Complex trains, presses, cranes, test benches, wind turbines, critical fans and pumps", "source": "https://www.fluke.com/en/product/condition-monitoring/vibration/handheld-vibration-analyzers/vibguard-iiot", "datasheet": "https://media.fluke.com/e2c0f210-c97e-4a7d-90cf-b3e60179f34f_original%20file.pdf", "notes": "Yellotec lists this as 'VIBGUARD – Vibration Monitoring and Analysis' (20 channels).", "ytListed": true, "wheelExtra": [], "sortKey": [0, 6, 5, 0]}, {"id": "f832", "name": "Fluke 832 Laser Shaft Alignment Tool", "family": "Laser shaft alignment", "wheel": "shaft", "tier": 2, "fam": 6, "measures": "Single-laser adaptive alignment; Live Move H+V; vertical alignment; thermal growth and coupling targets; static/multiple feet; quality factor & SD", "channels": "Single non-adjustable laser; dual-detector sensor", "freq": "1 µm; 10 µrad; optical range 14 × 14 mm; error <2%; up to 10 m", "range": "Machine-train count not published", "hazard": "No Ex rating; IP65 tablet", "connect": "8-inch IP65 tablet, Wi-Fi 6, Bluetooth 5.1, RFID; custom reports; ROI calculator", "power": "Tablet up to 11 h; sensor 30 h; laser 40 h", "extras": "Fluke's named successor for the 831", "typical": "Everyday alignment of standard machines", "source": "https://www.fluke.com/en-us/product/condition-monitoring/laser-alignment/fluke-832", "datasheet": "https://media.fluke.com/5e41b21c-f981-4faa-ba62-b42700f05110_original%20file.pdf", "notes": "Sensor/laser specs match the RotAlign Core data sheet. Ask Fluke which of 832 or RotAlign Core is offered in South Africa.", "ytListed": false, "wheelExtra": [], "sortKey": [0, 2, 6, 0]}, {"id": "touchex", "name": "Fluke RotAlign Touch EX", "family": "Laser shaft alignment (Ex Zone 1)", "wheel": "shaft", "tier": 4, "fam": 6.1, "measures": "Continuous sweep, Live Move H+V, move simulator, soft-foot wizard, vertiSWEEP, spacer and in-situ cardan, thermal growth & targets", "channels": "sensALIGN 5 EX sensor (single laser)", "freq": "1 µm; 10 µrad; range unlimited (dynamically extendible); average accuracy >98%", "range": "Up to 6-machine trains", "hazard": "ATEX/IECEx Zone 1: II 2G Ex db ia op is IIC T5 Gb; IP68 tablet", "connect": "Wi-Fi, Bluetooth, RFID, camera; ARC 4.0 with PDF reporting", "power": "Tablet Li-ion 16.9 Wh, up to 11 h", "extras": "Only adaptive alignment system for Ex areas (per Fluke)", "typical": "Alignment in petrochemical, oil & gas and other Zone 1 areas", "source": "https://www.fluke.com/en-us/product/condition-monitoring/laser-alignment/rotalign-touch-ex", "datasheet": "https://media.fluke.com/9bc475db-4026-4b22-9fea-b3e6018a55a2_original%20file.pdf", "ytListed": true, "wheelExtra": [], "sortKey": [0, 4, 6.1, 0]}, {"id": "pullalign", "name": "PULLALIGN", "family": "Belt / pulley laser alignment", "wheel": "belt", "tier": 1, "fam": 7, "measures": "Vertical offset/angularity and horizontal angularity of pulleys, shown simultaneously", "channels": "Red line-laser unit + reflector (reflected laser doubles the distance), magnetic mount", "freq": "Accuracy 0.2°; up to 10 m between units; laser line 7 m at 5 m", "range": "Pulley/sheave faces", "hazard": "No Ex rating; laser class 2 (650 nm)", "connect": "Visual readout on targets (no app)", "power": "4 × AAA; about 25 h", "extras": "Laser 0.3 kg; reflector 0.27 kg", "typical": "Belt drives on fans, pumps, compressors and conveyors", "source": "https://www.fluke.com/en/product/condition-monitoring/laser-alignment/pullalign", "datasheet": "https://media.fluke.com/cff26e2c-448a-45c4-af0d-b3e6018a5289_original%20file.pdf", "ytListed": true, "wheelExtra": [], "sortKey": [0, 1, 7, 0]}, {"id": "pullite2", "name": "PULLALIGN LITE 2", "family": "Belt / pulley laser alignment", "wheel": "belt", "tier": 1, "fam": 7.1, "measures": "Offset and angular misalignment on three height-adjustable targets", "channels": "Green line laser (high visibility indoors and outdoors), magnetic mount", "freq": "Not published on product page", "range": "Not published on product page", "hazard": "Not published on product page", "connect": "Visual readout on targets", "power": "Not published on product page", "extras": "More accurate than wires or straight-edge (per Fluke)", "typical": "Quick belt/pulley checks in bright light", "source": "https://www.fluke.com/en/product/condition-monitoring/laser-alignment/pullalign-lite-2", "notes": "fluke.com lists a data sheet but publishes no numeric specs on the page; specs not retrieved this pass.", "ytListed": true, "wheelExtra": [], "sortKey": [0, 1, 7.1, 0]}, {"id": "f831", "name": "Fluke 831 Laser Shaft Alignment Tool", "family": "Laser shaft alignment", "wheel": "shaft", "tier": 2, "fam": 6, "measures": "Guided horizontal and vertical-machine alignment with live move", "channels": "Single reflected laser + prism", "freq": "1 µm; 10 µrad; prism average accuracy >99%", "range": "Not published on product page", "hazard": "No Ex rating; computer IP68, sensor IP65", "connect": "8-inch 1920 × 1200 computer; Wi-Fi / Bluetooth; NFC", "power": "Computer about 10 h", "extras": "", "typical": "Installed base", "source": "https://www.fluke.com/en-us/product/mechanical-maintenance/laser-alignment/831", "datasheet": "https://media.fluke.com/ebced88a-b7e9-404b-9a42-b3050145d815_original%20file.pdf", "status": "Discontinued (Fluke suggests 832)", "ytListed": false, "wheelExtra": [], "sortKey": [1, 2, 6, 0]}, {"id": "f830", "name": "Fluke 830 Laser Shaft Alignment Tool", "family": "Laser shaft alignment", "wheel": "shaft", "tier": 1, "fam": 6, "measures": "Guided horizontal alignment, compass mode, dynamic tolerance check, 'All-in-One' result screen", "channels": "Single reflected laser + 90° roof prism", "freq": "1 µm; 10 µrad (sensor); prism average accuracy >99%", "range": "Not published on product page", "hazard": "No Ex rating; computer IP65", "connect": "Integrated wireless; 3.5-inch display", "power": "Not published on product page", "extras": "", "typical": "Installed base", "source": "https://www.fluke.com/en-us/product/mechanical-maintenance/laser-alignment/fluke-830", "datasheet": "https://media.fluke.com/ba28a8b4-945c-4f72-ae81-b106006a338c_original%20file.pdf", "status": "Discontinued (Fluke suggests 831, itself replaced by 832)", "ytListed": false, "wheelExtra": [], "sortKey": [1, 1, 6, 0]}, {"id": "shafttouch", "name": "SHAFTALIGN Touch", "family": "Laser shaft alignment", "wheel": "shaft", "tier": 1, "fam": 6, "measures": "Horizontal/vertical alignment, soft foot, twist/flatness, straightness, machine movement, uncoupled alignment", "channels": "Single laser", "freq": "Not published on product page", "range": "2-machine trains", "hazard": "No Ex rating", "connect": "Touchscreen; Wi-Fi & Bluetooth", "power": "Not published on product page", "extras": "", "typical": "Installed base", "source": "https://www.fluke.com/en-us/product/condition-monitoring/laser-alignment/shaftalign-touch", "datasheet": "https://media.fluke.com/82a0da87-8a4f-479e-ba55-b3e6018a29d9_original%20file.pdf", "status": "Discontinued (Fluke suggests RotAlign Core)", "ytListed": true, "notes": "Still listed on yellotec.co.za although fluke.com marks it discontinued.", "wheelExtra": [], "sortKey": [1, 1, 6, 0]}, {"id": "optaligntouch", "name": "OPTALIGN Touch", "family": "Laser shaft alignment", "wheel": "shaft", "tier": 3, "fam": 6, "measures": "Guided alignment with automatic data collection during rotation; simultaneous H+V live correction", "channels": "sensALIGN 5 sensor/laser heads (single laser)", "freq": "Not published on product page", "range": "Not published on product page", "hazard": "No Ex rating", "connect": "Wi-Fi & Bluetooth; cloud sharing", "power": "Not published on product page", "extras": "", "typical": "Installed base", "source": "https://www.fluke.com/en-us/product/mechanical-maintenance/laser-alignment/optalign-touch", "datasheet": "https://media.fluke.com/21d31127-55ad-4b4b-9132-b3e6018a5c5c_original%20file.pdf", "status": "Discontinued (Fluke suggests RotAlign Elite)", "ytListed": true, "notes": "Still listed on yellotec.co.za although fluke.com marks it discontinued.", "wheelExtra": [], "sortKey": [1, 3, 6, 0]}, {"id": "rotaligntouch", "name": "ROTALIGN Touch", "family": "Laser shaft alignment (advanced)", "wheel": "shaft", "tier": 4, "fam": 6, "measures": "Advanced adaptive alignment (predecessor of RotAlign Elite)", "channels": "Single laser", "freq": "Not published on product page", "range": "Not published on product page", "hazard": "No Ex rating (see RotAlign Touch EX)", "connect": "Not published on product page", "power": "Not published on product page", "extras": "", "typical": "Installed base", "source": "https://www.fluke.com/en-us/product/mechanical-maintenance/laser-alignment/rotalign-touch", "status": "Discontinued (Fluke suggests RotAlign Elite)", "ytListed": true, "notes": "Still listed on yellotec.co.za although fluke.com marks it discontinued. Specs not repeated here — use the archived data sheet for installed-base questions.", "wheelExtra": [], "sortKey": [1, 4, 6, 0]}, {"id": "core-s", "name": "RotAlign Core · Starter", "family": "Laser shaft alignment (Core edition)", "wheel": "shaft", "tier": 2, "fam": 6, "measures": "Short-Flex coupling & tolerances; Live Move H and V; Soft foot; 8-point Active Clock; Static feet & multiple feet; Quality factor & SD", "channels": "Single non-adjustable laser; sensor with two HD position detectors + MEMS inclinometer", "freq": "1 µm; 10 µrad; optical range 14 × 14 mm (dynamically extendible); up to 10 m laser–sensor", "range": "2-machine (single coupling); 3-machine train needs Expert", "hazard": "No Ex rating", "connect": "Shaft Alignment tablet (locked or unlocked) or Android app; Bluetooth 5.1; ARC 4.0 cloud; ROI calculator", "power": "Tablet up to 11 h; sensor 30 h; laser 40 h", "extras": "Edition upgradeable in the field. Starter / Advanced / Expert bundles.", "typical": "Standard horizontal motors, pumps and fans", "source": "https://www.fluke.com/en-us/product/condition-monitoring/laser-alignment/fluke-rotalign-core", "datasheet": "https://media.fluke.com/fdfa56ca-3048-4cdc-a89e-b41201493eeb_original%20file.pdf", "ytListed": false, "wheelExtra": [], "edition": "Starter", "rank": 1, "notes": "Edition features per the edition matrix supplied by Fluke Reliability via Yellotec (Nov 2026), matching the 'Tailored feature bundles' table in the RotAlign Core data sheet. Edition prices not published.", "sortKey": [0, 2, 6, 1]}, {"id": "core-a", "name": "RotAlign Core · Advanced", "family": "Laser shaft alignment (Core edition)", "wheel": "shaft", "tier": 2, "fam": 6, "measures": "Everything in RotAlign Core · Starter, plus: Spacer coupling, Thermal growth & coupling targets, Vertical alignment", "channels": "Single non-adjustable laser; sensor with two HD position detectors + MEMS inclinometer", "freq": "1 µm; 10 µrad; optical range 14 × 14 mm (dynamically extendible); up to 10 m laser–sensor", "range": "2-machine (single coupling); 3-machine train needs Expert", "hazard": "No Ex rating", "connect": "Shaft Alignment tablet (locked or unlocked) or Android app; Bluetooth 5.1; ARC 4.0 cloud; ROI calculator", "power": "Tablet up to 11 h; sensor 30 h; laser 40 h", "extras": "Edition upgradeable in the field. Starter / Advanced / Expert bundles.", "typical": "Standard horizontal motors, pumps and fans", "source": "https://www.fluke.com/en-us/product/condition-monitoring/laser-alignment/fluke-rotalign-core", "datasheet": "https://media.fluke.com/fdfa56ca-3048-4cdc-a89e-b41201493eeb_original%20file.pdf", "ytListed": false, "wheelExtra": [], "edition": "Advanced", "rank": 2, "notes": "Edition features per the edition matrix supplied by Fluke Reliability via Yellotec (Nov 2026), matching the 'Tailored feature bundles' table in the RotAlign Core data sheet. Edition prices not published.", "sortKey": [0, 2, 6, 2]}, {"id": "core-e", "name": "RotAlign Core · Expert", "family": "Laser shaft alignment (Core edition)", "wheel": "shaft", "tier": 3, "fam": 6, "measures": "Everything in RotAlign Core · Advanced, plus: Continuous sweep & multipoint, 3-machine train, Post-processing by edit points", "channels": "Single non-adjustable laser; sensor with two HD position detectors + MEMS inclinometer", "freq": "1 µm; 10 µrad; optical range 14 × 14 mm (dynamically extendible); up to 10 m laser–sensor", "range": "Up to 3-machine train", "hazard": "No Ex rating", "connect": "Shaft Alignment tablet (locked or unlocked) or Android app; Bluetooth 5.1; ARC 4.0 cloud; ROI calculator", "power": "Tablet up to 11 h; sensor 30 h; laser 40 h", "extras": "Edition upgradeable in the field. Starter / Advanced / Expert bundles.", "typical": "Standard horizontal motors, pumps and fans", "source": "https://www.fluke.com/en-us/product/condition-monitoring/laser-alignment/fluke-rotalign-core", "datasheet": "https://media.fluke.com/fdfa56ca-3048-4cdc-a89e-b41201493eeb_original%20file.pdf", "ytListed": false, "wheelExtra": [], "edition": "Expert", "rank": 3, "notes": "Edition features per the edition matrix supplied by Fluke Reliability via Yellotec (Nov 2026), matching the 'Tailored feature bundles' table in the RotAlign Core data sheet. Edition prices not published.", "sortKey": [0, 3, 6, 3]}, {"id": "elite-s", "name": "RotAlign Elite · Starter", "family": "Laser shaft alignment (Elite edition)", "wheel": "shaft", "tier": 4, "fam": 6, "measures": "Short-Flex coupling & tolerances; Live Move H and V; Soft foot; 8-point Active Clock; Static feet & multiple feet; Quality factor & SD; Spacer coupling; Thermal growth & coupling targets; Vertical alignment; Continuous sweep & multipoint; 3-machine train; Post-processing by edit points; Up to 6-machine train; Pass mode; Cardan shaft", "channels": "Adjustable laser; sensor with two HD position detectors + MEMS inclinometer", "freq": "1 µm; 5 µrad; optical range 20 × 20 mm; up to 10 m", "range": "Up to 6-machine train", "hazard": "No Ex rating", "connect": "Shaft Alignment tablet or Android app; ARC 4.0", "power": "Tablet up to 11 h; sensor 55 h; laser 90 h", "extras": "Edition upgradeable in the field. Starter / Starter Plus / Advanced / Expert bundles.", "typical": "Complex trains, cardan shafts, vertical machines, turbomachinery", "source": "https://www.fluke.com/en-us/product/condition-monitoring/laser-alignment/fluke-rotalign-elite", "datasheet": "https://media.fluke.com/73e459d2-2998-4367-8df1-b3a8013d78b4_original%20file.pdf", "ytListed": false, "wheelExtra": [], "edition": "Starter", "rank": 4, "notes": "Edition features per the edition matrix supplied by Fluke Reliability via Yellotec (Nov 2026), matching the 'Tailored feature bundles' table in the RotAlign Elite data sheet. Edition prices not published.", "sortKey": [0, 4, 6, 4]}, {"id": "elite-sp", "name": "RotAlign Elite · Starter Plus", "family": "Laser shaft alignment (Elite edition)", "wheel": "shaft", "tier": 4, "fam": 6, "measures": "Everything in RotAlign Elite · Starter, plus: Move simulator, Advanced vertical (VertiSweep), Soft-foot diagnose", "channels": "Adjustable laser; sensor with two HD position detectors + MEMS inclinometer", "freq": "1 µm; 5 µrad; optical range 20 × 20 mm; up to 10 m", "range": "Up to 6-machine train", "hazard": "No Ex rating", "connect": "Shaft Alignment tablet or Android app; ARC 4.0", "power": "Tablet up to 11 h; sensor 55 h; laser 90 h", "extras": "Edition upgradeable in the field. Starter / Starter Plus / Advanced / Expert bundles.", "typical": "Complex trains, cardan shafts, vertical machines, turbomachinery", "source": "https://www.fluke.com/en-us/product/condition-monitoring/laser-alignment/fluke-rotalign-elite", "datasheet": "https://media.fluke.com/73e459d2-2998-4367-8df1-b3a8013d78b4_original%20file.pdf", "ytListed": false, "wheelExtra": [], "edition": "Starter Plus", "rank": 5, "notes": "Edition features per the edition matrix supplied by Fluke Reliability via Yellotec (Nov 2026), matching the 'Tailored feature bundles' table in the RotAlign Elite data sheet. Edition prices not published.", "sortKey": [0, 4, 6, 5]}, {"id": "elite-a", "name": "RotAlign Elite · Advanced", "family": "Laser shaft alignment (Elite edition)", "wheel": "shaft", "tier": 5, "fam": 6, "measures": "Everything in RotAlign Elite · Starter Plus, plus: In-Situ cardan shaft, Intelli modes, Vibration measurement", "channels": "Adjustable laser; sensor with two HD position detectors + MEMS inclinometer", "freq": "1 µm; 5 µrad; optical range 20 × 20 mm; up to 10 m", "range": "Up to 6-machine train", "hazard": "No Ex rating", "connect": "Shaft Alignment tablet or Android app; ARC 4.0", "power": "Tablet up to 11 h; sensor 55 h; laser 90 h", "extras": "Edition upgradeable in the field. Starter / Starter Plus / Advanced / Expert bundles.", "typical": "Complex trains, cardan shafts, vertical machines, turbomachinery", "source": "https://www.fluke.com/en-us/product/condition-monitoring/laser-alignment/fluke-rotalign-elite", "datasheet": "https://media.fluke.com/73e459d2-2998-4367-8df1-b3a8013d78b4_original%20file.pdf", "ytListed": false, "wheelExtra": [], "edition": "Advanced", "rank": 6, "notes": "Edition features per the edition matrix supplied by Fluke Reliability via Yellotec (Nov 2026), matching the 'Tailored feature bundles' table in the RotAlign Elite data sheet. Edition prices not published.", "sortKey": [0, 5, 6, 6]}, {"id": "elite-e", "name": "RotAlign Elite · Expert", "family": "Laser shaft alignment (Elite edition)", "wheel": "shaft", "tier": 5, "fam": 6, "measures": "Everything in RotAlign Elite · Advanced, plus: Up to 13-machine train, Multi-coupling, Live Trend", "channels": "Adjustable laser; sensor with two HD position detectors + MEMS inclinometer", "freq": "1 µm; 5 µrad; optical range 20 × 20 mm; up to 10 m", "range": "Up to 13-machine train; multi-coupling", "hazard": "No Ex rating", "connect": "Shaft Alignment tablet or Android app; ARC 4.0", "power": "Tablet up to 11 h; sensor 55 h; laser 90 h", "extras": "Edition upgradeable in the field. Starter / Starter Plus / Advanced / Expert bundles.", "typical": "Complex trains, cardan shafts, vertical machines, turbomachinery", "source": "https://www.fluke.com/en-us/product/condition-monitoring/laser-alignment/fluke-rotalign-elite", "datasheet": "https://media.fluke.com/73e459d2-2998-4367-8df1-b3a8013d78b4_original%20file.pdf", "ytListed": false, "wheelExtra": [], "edition": "Expert", "rank": 7, "notes": "Edition features per the edition matrix supplied by Fluke Reliability via Yellotec (Nov 2026), matching the 'Tailored feature bundles' table in the RotAlign Elite data sheet. Edition prices not published.", "sortKey": [0, 5, 6, 7]}];
+const RECS = [{"id": "quick", "label": "Quick go/no-go bearing & machine checks", "need": "Fast, repeatable overall vibration and bearing condition on walk-arounds; no analyst needed.", "bestId": "f805", "bestWhy": "Severity-scaled overall vibration (10 Hz–1 kHz) plus Crest Factor+ bearing reading (4–20 kHz) and IR temperature; Fluke Connect sharing.", "runnerId": "f810", "runnerWhy": "Steps up to a triaxial diagnosis with named faults and repair advice when a reading looks bad.", "suitableIds": ["f805", "f810", "vs2", "trio"], "tip": "Pair the 805 FC for screening with an 810 or VibXpert for the follow-up diagnosis."}, {"id": "diagnose", "label": "Root-cause fault diagnosis on site", "need": "Name the fault (unbalance, misalignment, looseness, bearings) and its severity on the first visit.", "bestId": "f810", "bestWhy": "On-board diagnostic engine gives plain-text faults, 4-level severity and repair recommendations without prior history.", "runnerId": "vx3", "runnerWhy": "Six-channel FFT/phase/envelope analysis for analysts who need to dig deeper.", "suitableIds": ["f810", "vx3", "vx2", "trio"], "tip": "810 diagnoses common faults on 200–12,000 rpm machines; slower or unusual machines need an analyst tool."}, {"id": "route", "label": "Route-based PdM programme", "need": "Collect consistent data on many assets, upload to software and trend.", "bestId": "vs2", "bestWhy": "Triaxial sensor captures X/Y/Z in one placement; RFID point ID; up to 4× faster than single-axis routes (per Fluke).", "runnerId": "vx3", "runnerWhy": "Route collection plus 6-channel analysis and balancing in one instrument.", "suitableIds": ["vs2", "vs2ex", "vx2", "vx3", "trio"], "tip": "OMNITREND Center is the software for VIBSCANNER 2 and VIBXPERT II."}, {"id": "exroute", "label": "Hazardous-area (Ex) vibration", "need": "Certified equipment for vibration work in Ex zones.", "bestId": "vs2ex", "bestWhy": "ATEX/IECEx-certified triaxial route collector with the same workflow as VIBSCANNER 2.", "runnerId": "accel310", "runnerWhy": "Permanently mounted wireless option rated ATEX II 2 G Ex ib IIC T4 (Zone 1/2).", "suitableIds": ["vs2ex", "accel310", "trio"], "tip": "Always confirm the exact zone/gas group on the certificate against the site classification."}, {"id": "balancing", "label": "Field balancing", "need": "Balance fans, rotors and impellers in place, 1 or 2 planes.", "bestId": "vx3", "bestWhy": "Guided touchscreen balancing workflow with weight/placement calculation and verification; six synchronous channels.", "runnerId": "vx2", "runnerWhy": "Proven 1- and 2-plane field balancing with route and analysis functions.", "suitableIds": ["vx3", "vx2"], "tip": "VibXpert 3 is also sold as a 'Balancer' bundle."}, {"id": "remote", "label": "Wireless monitoring of motors, pumps & fans", "need": "Always-on data from many balance-of-plant assets without cabling or routes.", "bestId": "accel310", "bestWhy": "High-res triaxial data to 10 kHz, >3-year battery, mesh network and Azima AI diagnostics.", "runnerId": "vgc", "runnerWhy": "Wired 6-channel online system when an asset justifies continuous high-dynamic monitoring.", "suitableIds": ["accel310", "f3563", "f3561", "vgc"], "tip": "3561 FC and 3563 are discontinued; quote Accel 310 / Watchman AIR for new wireless projects."}, {"id": "critical", "label": "Continuous monitoring of critical assets", "need": "Synchronous multi-channel monitoring, orbits, process correlation and alarms on high-value machines.", "bestId": "vgiiot", "bestWhy": "12/16/20 synchronous channels, 50 kHz bandwidth, orbits, torque and MQTT/Modbus integration.", "runnerId": "vgc", "runnerWhy": "Six-channel system for a single extruder, centrifuge, turbocompressor or large fan.", "suitableIds": ["vgiiot", "vgc", "accel310"], "tip": "VIBGUARD IIoT can take buffered outputs from existing protection racks on turbomachinery."}, {"id": "stdalign", "label": "Standard horizontal shaft alignment", "need": "Everyday motor–pump/fan alignment, up to 3-machine trains.", "editionFinder": true, "defaultNeeds": [], "extraIds": ["f832", "touchex"], "bestId": "core-s", "bestWhy": "Single-laser dual-detector, no pre-alignment, simultaneous Live Move; upgrade bundles grow with the team.", "runnerId": "core-a", "runnerWhy": "", "suitableIds": ["core-s", "core-a", "core-e", "f832"], "tip": "Fluke's own guide: choose Core for 3 trains or fewer, no cardan, no multi-coupled machines."}, {"id": "cxalign", "label": "Complex alignment (cardan, vertical, long trains)", "need": "Cardan shafts, vertical machines, multi-coupled trains, turbomachinery, live trend.", "editionFinder": true, "defaultNeeds": ["cardan"], "extraIds": ["touchex"], "bestId": "elite-s", "bestWhy": "", "runnerId": "elite-sp", "runnerWhy": "", "suitableIds": ["elite-s", "elite-sp", "elite-a", "elite-e", "touchex"], "tip": "Fluke's guide: choose Elite for more than 3 machines, cardan, live machine movement or vibration during alignment."}, {"id": "exalign", "label": "Shaft alignment in Ex Zone 1", "need": "ATEX/IECEx Zone 1 certified alignment system.", "bestId": "touchex", "bestWhy": "Zone 1 certified (II 2G Ex db ia op is IIC T5 Gb) with IP68 tablet and up to 6-machine trains.", "runnerId": null, "runnerWhy": "", "suitableIds": ["touchex"], "tip": "No other current Fluke alignment system on this page carries an Ex rating."}, {"id": "belt", "label": "Belt & pulley drives", "need": "Align sheaves/pulleys quickly to cut belt wear and energy loss.", "bestId": "pullalign", "bestWhy": "Reflected laser shows vertical and horizontal misalignment together; 0.2° accuracy up to 10 m.", "runnerId": "pullite2", "runnerWhy": "Green laser with three height-adjustable targets for bright indoor/outdoor light.", "suitableIds": ["pullalign", "pullite2"], "tip": "PULLALIGN LITE 2 numeric specs are not published on fluke.com — confirm before quoting accuracy."}];
+const WHEEL = [{"id": "screening", "label": "Screening", "sub": "805 FC · 810"}, {"id": "route", "label": "Route", "sub": "VibScanner 2"}, {"id": "analysis", "label": "Analysis", "sub": "VibXpert · TRIO"}, {"id": "wireless", "label": "Wireless", "sub": "Accel 310 · 356x"}, {"id": "online", "label": "Online CMS", "sub": "VIBGUARD"}, {"id": "shaft", "label": "Shaft align", "sub": "RotAlign · 832"}, {"id": "belt", "label": "Belt / pulley", "sub": "PULLALIGN"}];
+const VERIFY = [["Source rule", "All specs from fluke.com product pages and Fluke/Prüftechnik/Azima data sheets (checked 13 Nov 2026). 'Not published' marks figures Fluke does not publish; nothing is invented."], ["Scope", "Vibration and laser alignment only. Acoustic imagers, motor/insulation/power analyzers and thermal imagers excluded (FLIR line)."], ["Accel 310", "Specs from Fluke data sheet 6014076a (Watchman AIR, 2023). fluke.com page carries headline features only."], ["Azima TRIO", "No model list or specs on fluke.com; request datasheet."], ["VibXpert 3 / VIBGUARD compact / PULLALIGN LITE 2", "Bandwidth or numeric specs not on the product page; confirm on the data sheet."], ["Discontinued", "3561 FC, 3563, 830, 831, SHAFTALIGN Touch, OPTALIGN Touch, ROTALIGN Touch are discontinued on fluke.com; kept for installed-base comparison."], ["Yellotec catalogue", "Checked against the yellotec.co.za product sitemap (248 products, 13 Nov 2026). Tag shown only where no product page exists."], ["RotAlign editions", "Core (Starter/Advanced/Expert) and Elite (Starter/Starter Plus/Advanced/Expert) features per the edition matrix supplied by Fluke Reliability via Yellotec (Nov 2026), matching the Core/Elite data sheets. Multi-coupling row partially visible in the supplied image; Live Trend from the Elite data sheet. Edition prices not published."], ["Sort basis", "Capability tier is Yellotec-assigned from Fluke's own positioning (e.g. Core vs Elite chooser). Fluke does not publish prices."]];
+const MATRIX = {"title": "RotAlign edition matrix", "toggleLabel": "RotAlign edition matrix", "hint": "RotAlign Core (3 editions) vs RotAlign Elite (4 editions). Check = included. Lowest edition first.", "editions": [{"id": "core-s", "product": "core", "label": "Starter", "rank": 1, "why": "Core hardware: single fixed laser, 1 µm / 10 µrad."}, {"id": "core-a", "product": "core", "label": "Advanced", "rank": 2, "why": ""}, {"id": "core-e", "product": "core", "label": "Expert", "rank": 3, "why": ""}, {"id": "elite-s", "product": "elite", "label": "Starter", "rank": 4, "why": "Elite hardware: adjustable laser, 5 µrad, 20 × 20 mm detector."}, {"id": "elite-sp", "product": "elite", "label": "Starter Plus", "rank": 5, "why": ""}, {"id": "elite-a", "product": "elite", "label": "Advanced", "rank": 6, "why": ""}, {"id": "elite-e", "product": "elite", "label": "Expert", "rank": 7, "why": ""}], "features": [{"key": "shortflex", "label": "Short-Flex coupling & tolerances", "has": ["core-s", "core-a", "core-e", "elite-s", "elite-sp", "elite-a", "elite-e"]}, {"key": "livemove", "label": "Live Move H and V", "has": ["core-s", "core-a", "core-e", "elite-s", "elite-sp", "elite-a", "elite-e"]}, {"key": "softfoot", "label": "Soft foot", "has": ["core-s", "core-a", "core-e", "elite-s", "elite-sp", "elite-a", "elite-e"]}, {"key": "clock8", "label": "8-point Active Clock", "has": ["core-s", "core-a", "core-e", "elite-s", "elite-sp", "elite-a", "elite-e"]}, {"key": "feet", "label": "Static feet & multiple feet", "has": ["core-s", "core-a", "core-e", "elite-s", "elite-sp", "elite-a", "elite-e"]}, {"key": "qf", "label": "Quality factor & SD", "has": ["core-s", "core-a", "core-e", "elite-s", "elite-sp", "elite-a", "elite-e"]}, {"key": "spacer", "label": "Spacer coupling", "has": ["core-a", "core-e", "elite-s", "elite-sp", "elite-a", "elite-e"]}, {"key": "thermal", "label": "Thermal growth & coupling targets", "has": ["core-a", "core-e", "elite-s", "elite-sp", "elite-a", "elite-e"]}, {"key": "vertical", "label": "Vertical alignment", "has": ["core-a", "core-e", "elite-s", "elite-sp", "elite-a", "elite-e"]}, {"key": "sweep", "label": "Continuous sweep & multipoint", "has": ["core-e", "elite-s", "elite-sp", "elite-a", "elite-e"]}, {"key": "train3", "label": "3-machine train", "has": ["core-e", "elite-s", "elite-sp", "elite-a", "elite-e"]}, {"key": "editpts", "label": "Post-processing by edit points", "has": ["core-e", "elite-s", "elite-sp", "elite-a", "elite-e"]}, {"key": "train6", "label": "Up to 6-machine train", "has": ["elite-s", "elite-sp", "elite-a", "elite-e"]}, {"key": "passmode", "label": "Pass mode", "has": ["elite-s", "elite-sp", "elite-a", "elite-e"]}, {"key": "cardan", "label": "Cardan shaft", "has": ["elite-s", "elite-sp", "elite-a", "elite-e"]}, {"key": "movesim", "label": "Move simulator", "has": ["elite-sp", "elite-a", "elite-e"]}, {"key": "advvert", "label": "Advanced vertical (VertiSweep)", "has": ["elite-sp", "elite-a", "elite-e"]}, {"key": "sfdiag", "label": "Soft-foot diagnose", "has": ["elite-sp", "elite-a", "elite-e"]}, {"key": "insitu", "label": "In-Situ cardan shaft", "has": ["elite-a", "elite-e"]}, {"key": "intelli", "label": "Intelli modes", "has": ["elite-a", "elite-e"]}, {"key": "vibration", "label": "Vibration measurement", "has": ["elite-a", "elite-e"]}, {"key": "train14", "label": "Up to 13-machine train", "has": ["elite-e"]}, {"key": "multicoup", "label": "Multi-coupling", "has": ["elite-e"], "ast": "*"}, {"key": "livetrend", "label": "Live Trend", "has": ["elite-e"], "ast": "**"}], "groups": [{"label": "RotAlign Core", "cls": "core", "ids": ["core-s", "core-a", "core-e"]}, {"label": "RotAlign Elite", "cls": "elite", "ids": ["elite-s", "elite-sp", "elite-a", "elite-e"]}], "hardware": [{"label": "Laser / sensor", "core": "Single non-adjustable laser; dual-detector sensor", "elite": "Adjustable laser; dual-detector sensor"}, {"label": "Resolution / detector", "core": "1 µm; 10 µrad; 14 × 14 mm (extendible)", "elite": "1 µm; 5 µrad; 20 × 20 mm"}, {"label": "Battery (sensor / laser)", "core": "30 h / 40 h", "elite": "55 h / 90 h"}], "needs": ["spacer", "thermal", "vertical", "sweep", "train3", "train6", "train14", "cardan", "passmode", "movesim", "advvert", "sfdiag", "insitu", "intelli", "vibration", "multicoup", "livetrend"], "sourceHtml": "<b>Edition matrix supplied by Fluke Reliability via Yellotec (Nov 2026).</b> Columns: RotAlign Core Starter / Advanced / Expert; RotAlign Elite Starter / Starter Plus / Advanced / Expert. Cross-checked against the 'Tailored feature bundles' tables on page 2 of the Fluke <a href='https://media.fluke.com/fdfa56ca-3048-4cdc-a89e-b41201493eeb_original%20file.pdf' target='_blank' rel='noopener'>RotAlign Core</a> and <a href='https://media.fluke.com/73e459d2-2998-4367-8df1-b3a8013d78b4_original%20file.pdf' target='_blank' rel='noopener'>RotAlign Elite</a> data sheets; no differences found. Elite rows 'Short-Flex, Spacer &amp; Cardan Shaft', '8-Point Active clock, Continuous Sweep, MultiPoint PassMode', 'Quality Factor, SD &amp; Post Processing by Edit Points' and '3 to 6 Machine Trains' are split here to line up with the Core rows. <br/>* Multi-coupling: per supplied matrix, partially visible (row cut off); the Elite data sheet confirms Expert only.<br/>** Live Trend: not visible in the supplied matrix; taken from the Elite data sheet (Expert only).<br/>Hardware rows from the Core / Elite data sheets. Edition prices are not published."};
+
+const CX=160, CY=160, R=138, INNER=32;
+const N = WHEEL.length;
+let tab = "recommend";
+let selectedWheel = null;
+let selectedApp = PAGE.defaultApp;
+let compareIds = PAGE.defaultCompare.slice();
+let browseId = PAGE.defaultBrowse;
+let browseApp = "all";
+var NOTE_OPEN = {};
+let cmpView = "side";
+var NEEDS = {};
+
+function esc(s){
+  return String(s==null?"":s).replace(/[&<>"']/g, function(ch){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch];
+  });
+}
+function noteBox(key, title, bodyHtml, dark){
+  var open = !!NOTE_OPEN[key];
+  return '<div class="yt-note'+(dark?' dark':'')+(open?' is-open':'')+'" data-note="'+esc(key)+'">'+
+    '<div class="yt-note-head"><strong>'+esc(title)+'</strong>'+
+    '<button type="button" class="yt-note-toggle" aria-expanded="'+(open?'true':'false')+'">'+(open?'Hide':'Show')+'</button></div>'+
+    '<div class="yt-note-body">'+bodyHtml+'</div></div>';
+}
+document.addEventListener("click", function(e){
+  var btn = e.target.closest ? e.target.closest(".yt-note-toggle") : null;
+  if (!btn) return;
+  var box = btn.closest(".yt-note");
+  var open = !box.classList.contains("is-open");
+  box.classList.toggle("is-open", open);
+  btn.textContent = open ? "Hide" : "Show";
+  btn.setAttribute("aria-expanded", open ? "true" : "false");
+  NOTE_OPEN[box.getAttribute("data-note")] = open;
+});
+function notListedTag(c){
+  return c.ytListed === false ? ' <span class="yt-notlisted">Not listed on yellotec.co.za, ask sales</span>' : '';
+}
+function val(c, key){
+  var v = c[key];
+  return (v==null || v==="") ? "Not published" : v;
+}
+function statusText(c){ return c.status || "Current"; }
+function statusHtml(c){ return c.status ? '<span class="status-disc">'+esc(c.status)+'</span>' : 'Current'; }
+function ytText(c){ return c.ytListed === false ? "Not listed on yellotec.co.za" : (c.ytListed === true ? "Listed on yellotec.co.za" : "Not confirmed"); }
+
+function polar(cx,cy,r,deg) {
+  const a = (deg - 90) * Math.PI / 180;
+  return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+}
+function wedgePath(i) {
+  const start = i * (360/N);
+  const end = (i+1) * (360/N);
+  const gap = 1.2;
+  const s = start + gap/2, e = end - gap/2;
+  const [x1,y1] = polar(CX,CY,R,s);
+  const [x2,y2] = polar(CX,CY,R,e);
+  const [ix1,iy1] = polar(CX,CY,INNER,s);
+  const [ix2,iy2] = polar(CX,CY,INNER,e);
+  const large = (e-s) > 180 ? 1 : 0;
+  return "M "+ix1+" "+iy1+" L "+x1+" "+y1+" A "+R+" "+R+" 0 "+large+" 1 "+x2+" "+y2+" L "+ix2+" "+iy2+" A "+INNER+" "+INNER+" 0 "+large+" 0 "+ix1+" "+iy1+" Z";
+}
+function labelPos(i) {
+  const mid = (i + 0.5) * (360/N);
+  return polar(CX,CY, R*0.62, mid);
+}
+function byId(id){ return ITEMS.find(function(c){ return c.id===id; }) || ITEMS[0]; }
+function wheelMatch(c, wid){
+  if (!wid) return true;
+  if (c.wheel === wid) return true;
+  return (c.wheelExtra||[]).indexOf(wid) >= 0;
+}
+function recById(id){ return RECS.find(function(r){ return r.id===id; }); }
+function appMatch(c, appId){
+  var rec = recById(appId);
+  if (!rec) return true;
+  return rec.bestId===c.id || rec.runnerId===c.id || rec.suitableIds.indexOf(c.id) >= 0;
+}
+function cmpKey(a, b){
+  for (var i=0; i<Math.max(a.length,b.length); i++){
+    var x = a[i]==null?0:a[i], y = b[i]==null?0:b[i];
+    if (x !== y) return x < y ? -1 : 1;
+  }
+  return 0;
+}
+function sortAll(list){
+  return list.slice().sort(function(a,b){ return cmpKey(a.sortKey||[], b.sortKey||[]) || a.name.localeCompare(b.name); });
+}
+function filteredItems(){
+  return ITEMS.filter(function(c){
+    if (!wheelMatch(c, selectedWheel)) return false;
+    return selectedApp ? appMatch(c, selectedApp) : true;
+  });
+}
+
+// ---- Wheel ----
+const segG = document.getElementById("segments");
+WHEEL.forEach(function(p,i){
+  const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+  path.setAttribute("d", wedgePath(i));
+  path.setAttribute("class","seg");
+  path.setAttribute("data-id", p.id);
+  path.setAttribute("tabindex","0");
+  path.setAttribute("role","button");
+  path.setAttribute("aria-label", p.label);
+  path.addEventListener("mouseenter", function(){
+    path.classList.add("is-hover");
+    if (!path.classList.contains("is-selected")) path.style.transform = "scale(1.035)";
+  });
+  path.addEventListener("mouseleave", function(){
+    path.classList.remove("is-hover");
+    if (!path.classList.contains("is-selected")) path.style.transform = "scale(1)";
+  });
+  path.addEventListener("click", function(){ selectWheel(p.id); });
+  path.addEventListener("keydown", function(e){
+    if (e.key==="Enter" || e.key===" ") { e.preventDefault(); selectWheel(p.id); }
+  });
+  segG.appendChild(path);
+  const lp = labelPos(i);
+  const t = document.createElementNS("http://www.w3.org/2000/svg","text");
+  t.setAttribute("class","seg-label");
+  t.setAttribute("x", lp[0]); t.setAttribute("y", p.sub ? lp[1]-5 : lp[1]+3);
+  t.textContent = p.label;
+  segG.appendChild(t);
+  if (p.sub) {
+    const s = document.createElementNS("http://www.w3.org/2000/svg","text");
+    s.setAttribute("class","seg-sub");
+    s.setAttribute("x", lp[0]); s.setAttribute("y", lp[1]+8);
+    s.textContent = p.sub;
+    segG.appendChild(s);
+  }
+});
+function paintWheel(){
+  document.querySelectorAll(".seg").forEach(function(el){
+    var on = el.getAttribute("data-id") === selectedWheel;
+    el.classList.toggle("is-selected", on);
+    el.style.transform = on ? "scale(1.05)" : "scale(1)";
+  });
+  var p = WHEEL.find(function(x){ return x.id===selectedWheel; });
+  document.getElementById("filterNote").textContent = p ? ("Filtering · " + p.label) : "";
+}
+function selectWheel(id){
+  if (selectedWheel === id) { clearWheel(); return; }
+  selectedWheel = id; paintWheel(); render();
+}
+function clearWheel(){ selectedWheel = null; paintWheel(); render(); }
+document.getElementById("lensHub").addEventListener("click", clearWheel);
+document.getElementById("clearWheel").addEventListener("click", clearWheel);
+
+// ---- Application list (Recommend / Compare) ----
+const appList = document.getElementById("appList");
+RECS.forEach(function(r){
+  var b = document.createElement("button");
+  b.type="button"; b.className="app-btn"; b.dataset.id=r.id;
+  b.textContent = r.label;
+  b.addEventListener("click", function(){
+    selectedApp = (selectedApp === r.id && tab !== "recommend") ? null : r.id;
+    render();
+  });
+  appList.appendChild(b);
+});
+document.querySelectorAll(".tab").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    tab = btn.getAttribute("data-tab");
+    document.querySelectorAll(".tab").forEach(function(t){ t.classList.toggle("is-on", t===btn); });
+    render();
+  });
+});
+document.getElementById("scopeWrap").innerHTML = noteBox("scope", PAGE.scopeTitle, PAGE.scopeHtml);
+
+// ---- Cards ----
+function itemCard(c, opts){
+  opts = opts || {};
+  var html = '<div class="card '+(opts.cls||'')+'">';
+  if (opts.tag) html += '<div class="tag">'+esc(opts.tag)+'</div>';
+  html += '<h3>'+esc(c.name)+notListedTag(c)+'</h3>';
+  if (opts.why) html += '<p class="why">'+esc(opts.why)+'</p>';
+  html += '<div class="meta">';
+  PAGE.cardLines.forEach(function(l){ html += '<b>'+esc(l[0])+':</b> '+esc(val(c,l[1]))+'<br/>'; });
+  html += 'Status: '+statusHtml(c)+' · <a href="'+esc(c.source)+'" target="_blank" rel="noopener">Source</a>';
+  if (c.datasheet) html += ' · <a href="'+esc(c.datasheet)+'" target="_blank" rel="noopener">Datasheet</a>';
+  html += '</div>';
+  if (c.notes) html += '<div style="margin-top:8px">'+noteBox('item-'+c.id+(opts.tag||''), 'Verify note', esc(c.notes))+'</div>';
+  html += '</div>';
+  return html;
+}
+
+// ---- Edition matrix helpers (optional per page) ----
+function edRank(id){ var e = MATRIX.editions.find(function(x){ return x.id===id; }); return e ? e.rank : 999; }
+function edHas(edId, fkey){ var f = MATRIX.features.find(function(x){ return x.key===fkey; }); return !!f && f.has.indexOf(edId) >= 0; }
+function edCovers(edId, keys){ return keys.every(function(k){ return edHas(edId, k); }); }
+function featLabel(k){ var f = MATRIX.features.find(function(x){ return x.key===k; }); return f ? f.label : k; }
+function needsFor(rec){ if (!NEEDS[rec.id]) NEEDS[rec.id] = (rec.defaultNeeds||[]).slice(); return NEEDS[rec.id]; }
+function lowestEdition(keys){
+  var eds = MATRIX.editions.slice().sort(function(a,b){ return a.rank-b.rank; });
+  for (var i=0;i<eds.length;i++) if (edCovers(eds[i].id, keys)) return eds[i];
+  return null;
+}
+function nextEdition(ed){
+  var eds = MATRIX.editions.slice().sort(function(a,b){ return a.rank-b.rank; });
+  for (var i=0;i<eds.length;i++) if (eds[i].rank > ed.rank) return eds[i];
+  return null;
+}
+function addedBy(fromEd, toEd){
+  return MATRIX.features.filter(function(f){ return f.has.indexOf(toEd.id)>=0 && f.has.indexOf(fromEd.id)<0; }).map(function(f){ return f.label; });
+}
+function finderCard(rec){
+  var needs = needsFor(rec);
+  var html = '<div class="card"><h3>Which alignment features do you need?</h3>';
+  html += '<p class="why">Tick what the job needs. The lowest RotAlign edition that covers every tick is recommended (editions are upgradeable in the field).</p><div class="needs">';
+  MATRIX.needs.forEach(function(k){
+    html += '<label><input type="checkbox" class="need-cb" value="'+esc(k)+'"'+(needs.indexOf(k)>=0?' checked':'')+'/> '+esc(featLabel(k))+'</label>';
+  });
+  html += '</div><button type="button" class="need-reset" id="needReset">Clear ticks</button> <a href="#" id="toMatrix">Open edition matrix</a></div>';
+  return html;
+}
+function bindFinder(rec){
+  document.querySelectorAll(".need-cb").forEach(function(cb){
+    cb.addEventListener("change", function(){
+      var n = needsFor(rec), k = cb.value, i = n.indexOf(k);
+      if (cb.checked && i<0) n.push(k); if (!cb.checked && i>=0) n.splice(i,1);
+      render();
+    });
+  });
+  var r = document.getElementById("needReset"); if (r) r.addEventListener("click", function(){ NEEDS[rec.id] = []; render(); });
+  var m = document.getElementById("toMatrix"); if (m) m.addEventListener("click", function(e){ e.preventDefault(); goMatrix(); });
+}
+function goMatrix(){
+  tab = "compare"; cmpView = "matrix";
+  document.querySelectorAll(".tab").forEach(function(b){ b.classList.toggle("is-on", b.getAttribute("data-tab")==="compare"); });
+  render();
+}
+function finderRec(rec){
+  // returns a rec-like object with best/runner computed from ticked needs
+  var needs = needsFor(rec);
+  var best = lowestEdition(needs);
+  var out = Object.assign({}, rec);
+  var list = needs.map(featLabel);
+  out.bestId = best.id;
+  out.bestWhy = (needs.length ? 'Lowest edition covering: ' + list.join(', ') + '.' : 'No extra features ticked: entry edition covers standard horizontal alignment (short-flex coupling, Live Move H+V, soft foot, 8-point Active Clock, static/multiple feet, quality factor).') + (best.why ? ' ' + best.why : '');
+  var nx = nextEdition(best);
+  if (nx) { out.runnerId = nx.id; var add = addedBy(best, nx); out.runnerWhy = 'Next step up adds: ' + (add.length ? add.join(', ') : 'see matrix') + (nx.why ? '. ' + nx.why : '.'); }
+  else { out.runnerId = null; out.runnerWhy = ''; }
+  var covering = MATRIX.editions.filter(function(e){ return edCovers(e.id, needs) && e.id!==out.bestId && e.id!==out.runnerId; }).sort(function(a,b){ return a.rank-b.rank; }).map(function(e){ return e.id; });
+  out.suitableIds = [out.bestId].concat(out.runnerId?[out.runnerId]:[]).concat(covering).concat((rec.extraIds||[]).filter(function(id){ return covering.indexOf(id)<0; }));
+  return out;
+}
+
+function renderRecommend(){
+  var rec = recById(selectedApp) || RECS[0];
+  selectedApp = rec.id;
+  var useFinder = !!(MATRIX && rec.editionFinder);
+  if (useFinder) rec = finderRec(rec);
+  var best = byId(rec.bestId), runner = rec.runnerId ? byId(rec.runnerId) : null;
+  var suitable = rec.suitableIds.map(byId).filter(function(c){ return wheelMatch(c, selectedWheel); });
+  document.getElementById("sinceCount").textContent = rec.label;
+  document.getElementById("sinceHint").textContent = rec.need;
+  document.getElementById("resultsTitle").textContent = "Results · Recommend";
+  var html = useFinder ? finderCard(rec) : '';
+  if (wheelMatch(best, selectedWheel)) html += itemCard(best, {cls:"best", tag:"Best choice", why:rec.bestWhy});
+  else html += '<div class="card warn">Best fit ('+esc(best.name)+') is outside the selected wheel category.</div>';
+  if (runner) {
+    if (wheelMatch(runner, selectedWheel)) html += itemCard(runner, {cls:"runner", tag:"Runner-up", why:rec.runnerWhy});
+    else if (selectedWheel) html += '<div class="card warn">Runner-up ('+esc(runner.name)+') is outside the selected wheel category.</div>';
+  }
+  html += '<div class="card"><h3>Others suitable ('+suitable.length+')</h3>';
+  if (rec.tip) html += noteBox('tip-'+rec.id, 'Application tip', esc(rec.tip));
+  html += '<table class="spec"><thead><tr><th>'+esc(PAGE.itemNoun)+'</th>';
+  PAGE.recCols.forEach(function(col){ html += '<th>'+esc(col[0])+'</th>'; });
+  html += '<th>Status</th></tr></thead><tbody>';
+  suitable.forEach(function(c){
+    html += '<tr><td>'+esc(c.name)+notListedTag(c)+'</td>';
+    PAGE.recCols.forEach(function(col){ html += '<td>'+esc(val(c,col[1]))+'</td>'; });
+    html += '<td>'+esc(statusText(c))+'</td></tr>';
+  });
+  html += '</tbody></table></div>';
+  document.getElementById("results").innerHTML = html;
+  if (useFinder) bindFinder(recById(rec.id));
+}
+
+function browseItems(){
+  var base = ITEMS.filter(function(c){ return wheelMatch(c, selectedWheel); });
+  if (browseApp === "all") return sortAll(base);
+  return sortAll(base.filter(function(c){ return appMatch(c, browseApp); }));
+}
+function renderBrowse(){
+  var items = browseItems();
+  if (!items.length) items = sortAll(ITEMS.filter(function(c){ return wheelMatch(c, selectedWheel); }));
+  if (!items.length) items = sortAll(ITEMS);
+  if (!items.some(function(c){ return c.id===browseId; })) browseId = items[0].id;
+  var selected = byId(browseId);
+  var appLabel = browseApp === "all" ? PAGE.allLabel : ((recById(browseApp)||{}).label || "");
+  document.getElementById("sinceCount").textContent = items.length + " " + PAGE.itemNounPlural + " · " + appLabel;
+  document.getElementById("sinceHint").textContent = "Browse published OEM specs. Click a row or use the detail picker.";
+  document.getElementById("resultsTitle").textContent = "Results · Browse";
+  var html = '';
+  if (browseApp === "all") html += '<span class="sort-label">'+esc(PAGE.sortLabel)+(selectedWheel?' Wheel filter applied.':'')+'</span>';
+  else html += '<span class="sort-label">Same sort basis as "All": '+esc(PAGE.sortShort)+'</span>';
+  var opts = items.map(function(c){ return '<option value="'+c.id+'"'+(c.id===browseId?' selected':'')+'>'+esc(c.name)+'</option>'; }).join("");
+  html += '<div class="toolbar"><div><label for="browsePick">Detail card</label><select id="browsePick">'+opts+'</select></div></div>';
+  html += '<table class="spec"><thead><tr><th>'+esc(PAGE.itemNoun)+'</th>';
+  PAGE.browseCols.forEach(function(col){ html += '<th>'+esc(col[0])+'</th>'; });
+  html += '<th>Status</th></tr></thead><tbody>';
+  items.forEach(function(c){
+    html += '<tr data-id="'+c.id+'" style="cursor:pointer'+(c.id===browseId?';background:#fff6c2':'')+'"><td>'+esc(c.name)+notListedTag(c)+'</td>';
+    PAGE.browseCols.forEach(function(col){ html += '<td>'+esc(val(c,col[1]))+'</td>'; });
+    html += '<td>'+esc(statusText(c))+'</td></tr>';
+  });
+  html += '</tbody></table>';
+  html += itemCard(selected, {tag:"Detail"});
+  var vt = '<table class="spec"><thead><tr><th>Item</th><th>Status</th></tr></thead><tbody>';
+  VERIFY.forEach(function(row){ vt += '<tr><td>'+esc(row[0])+'</td><td>'+esc(row[1])+'</td></tr>'; });
+  vt += '</tbody></table>';
+  html += noteBox('verify-table', 'Verify-before-quoting notes ('+VERIFY.length+')', vt);
+  document.getElementById("results").innerHTML = html;
+  document.getElementById("browsePick").addEventListener("change", function(e){ browseId = e.target.value; render(); });
+  document.querySelectorAll("table.spec tbody tr[data-id]").forEach(function(tr){
+    tr.addEventListener("click", function(){ browseId = tr.getAttribute("data-id"); render(); });
+  });
+}
+
+function renderMatrix(){
+  document.getElementById("sinceCount").textContent = MATRIX.title;
+  document.getElementById("sinceHint").textContent = MATRIX.hint;
+  document.getElementById("resultsTitle").textContent = "Results · Compare";
+  var groups = MATRIX.groups;
+  var html = viewToggle();
+  html += '<table class="mx"><thead><tr><th class="corner" rowspan="2">Feature</th>';
+  groups.forEach(function(g){ html += '<th class="grp-'+g.cls+'" colspan="'+g.ids.length+'">'+esc(g.label)+'</th>'; });
+  html += '</tr><tr>';
+  groups.forEach(function(g){ g.ids.forEach(function(id){ var e = MATRIX.editions.find(function(x){return x.id===id;}); html += '<th class="ed-'+g.cls+'">'+esc(e.label)+'</th>'; }); });
+  html += '</tr></thead><tbody>';
+  var firstElite = groups[1] ? groups[1].ids[0] : null;
+  (MATRIX.hardware||[]).forEach(function(r){
+    html += '<tr class="hw"><td class="f"><b>'+esc(r.label)+'</b></td>';
+    groups.forEach(function(g){ html += '<td colspan="'+g.ids.length+'"'+(g.ids[0]===firstElite?' class="sep"':'')+'>'+esc(r[g.cls])+'</td>'; });
+    html += '</tr>';
+  });
+  MATRIX.features.forEach(function(f){
+    html += '<tr><td class="f">'+esc(f.label)+(f.ast?' <span class="mx-ast">'+esc(f.ast)+'</span>':'')+'</td>';
+    groups.forEach(function(g){ g.ids.forEach(function(id){
+      html += '<td'+(id===firstElite?' class="sep"':'')+'>'+(f.has.indexOf(id)>=0?'<span class="ck" aria-label="included">✓</span>':'<span class="no" aria-label="not included">—</span>')+'</td>';
+    }); });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  html += noteBox('mx-source', 'Matrix source & notes', MATRIX.sourceHtml);
+  document.getElementById("results").innerHTML = html;
+  bindToggle();
+}
+function viewToggle(){
+  if (!MATRIX) return '';
+  return '<div class="view-toggle"><button type="button" data-view="side"'+(cmpView==="side"?' class="is-on"':'')+'>Side-by-side</button><button type="button" data-view="matrix"'+(cmpView==="matrix"?' class="is-on"':'')+'>'+esc(MATRIX.toggleLabel)+'</button></div>';
+}
+function bindToggle(){
+  document.querySelectorAll(".view-toggle button").forEach(function(b){ b.addEventListener("click", function(){ cmpView = b.getAttribute("data-view"); render(); }); });
+}
+function renderCompare(){
+  if (MATRIX && cmpView === "matrix") { renderMatrix(); return; }
+  document.getElementById("sinceCount").textContent = "Side-by-side";
+  document.getElementById("sinceHint").textContent = "Pick up to three " + PAGE.itemNounPlural + ". Wheel / application filters shrink the pick lists.";
+  document.getElementById("resultsTitle").textContent = "Results · Compare";
+  var pool = sortAll(filteredItems());
+  if (pool.length < 2) pool = sortAll(ITEMS.filter(function(c){ return wheelMatch(c, selectedWheel); }));
+  if (pool.length < 2) pool = sortAll(ITEMS);
+  compareIds = compareIds.map(function(id, i){
+    return pool.some(function(c){ return c.id===id; }) ? id : (pool[i] ? pool[i].id : pool[0].id);
+  });
+  function optHtml(sel){ return pool.map(function(c){ return '<option value="'+c.id+'"'+(c.id===sel?' selected':'')+'>'+esc(c.name)+'</option>'; }).join(""); }
+  var html = viewToggle() + '<div class="toolbar">';
+  [0,1,2].forEach(function(i){ html += '<div><label for="c'+i+'">'+esc(PAGE.itemNoun)+' '+(i+1)+'</label><select id="c'+i+'">'+optHtml(compareIds[i])+'</select></div>'; });
+  html += '</div>';
+  var seen = {}, cols = [];
+  compareIds.map(byId).forEach(function(c){ if (c && !seen[c.id]) { seen[c.id]=1; cols.push(c); } });
+  html += '<table class="spec"><thead><tr><th>Spec</th>';
+  cols.forEach(function(c){ html += '<th>'+esc(c.name)+notListedTag(c)+'</th>'; });
+  html += '</tr></thead><tbody>';
+  PAGE.compareRows.forEach(function(row){
+    html += '<tr><th>'+esc(row[0])+'</th>';
+    cols.forEach(function(c){
+      var v;
+      if (row[1] === "_status") v = statusText(c);
+      else if (row[1] === "_yt") v = ytText(c);
+      else v = val(c, row[1]);
+      html += '<td>'+esc(v)+'</td>';
+    });
+    html += '</tr>';
+  });
+  html += '<tr><th>Source</th>';
+  cols.forEach(function(c){
+    html += '<td><a href="'+esc(c.source)+'" target="_blank" rel="noopener">OEM page</a>'+(c.datasheet?' · <a href="'+esc(c.datasheet)+'" target="_blank" rel="noopener">Datasheet</a>':'')+'</td>';
+  });
+  html += '</tr></tbody></table>';
+  var notes = cols.filter(function(c){ return c.notes; });
+  if (notes.length) html += noteBox('cmp-notes-'+cols.map(function(c){return c.id;}).join('-'), 'Verify notes for these '+PAGE.itemNounPlural+' ('+notes.length+')',
+    notes.map(function(c){ return '<b>'+esc(c.name)+':</b> '+esc(c.notes); }).join('<br/>'));
+  document.getElementById("results").innerHTML = html;
+  [0,1,2].forEach(function(i){
+    document.getElementById("c"+i).addEventListener("change", function(e){ compareIds[i] = e.target.value; render(); });
+  });
+  bindToggle();
+}
+
+function syncWheelDropdown(){
+  var wrap = document.getElementById("mainWrap");
+  var dd = document.getElementById("wheelDropdown");
+  var sel = document.getElementById("appSelect");
+  var useDd = (tab === "browse");
+  wrap.classList.toggle("two-col", useDd || (tab === "compare" && !!MATRIX && cmpView === "matrix"));
+  dd.style.display = useDd ? "" : "none";
+  if (!useDd) return;
+  var html = '<option value="all"'+(browseApp==="all"?" selected":"")+'>'+esc(PAGE.allOption)+'</option>';
+  RECS.forEach(function(r){ html += '<option value="'+r.id+'"'+(browseApp===r.id?" selected":"")+'>'+esc(r.label)+'</option>'; });
+  sel.innerHTML = html;
+}
+document.getElementById("appSelect").addEventListener("change", function(e){ browseApp = e.target.value; render(); });
+
+function render(){
+  document.querySelectorAll(".app-btn").forEach(function(b){ b.classList.toggle("is-on", b.dataset.id === selectedApp); });
+  syncWheelDropdown();
+  if (tab === "recommend") renderRecommend();
+  else if (tab === "browse") renderBrowse();
+  else renderCompare();
+}
+
+// Test hooks: #tab=browse&app=all · #tab=recommend&app=<id> · #tab=compare&ids=a,b,c · &wheel=<id> · &item=<id>
+(function applyHash(){
+  var h = new URLSearchParams(String(location.hash||"").replace(/^#/,""));
+  var t = h.get("tab");
+  if (t && ["recommend","browse","compare"].indexOf(t) >= 0) {
+    tab = t;
+    document.querySelectorAll(".tab").forEach(function(b){ b.classList.toggle("is-on", b.getAttribute("data-tab")===t); });
+  }
+  var a = h.get("app");
+  if (a) { if (tab === "browse") browseApp = (a === "all" || recById(a)) ? a : "all"; else if (recById(a)) selectedApp = a; }
+  if (h.get("ids") && !a) selectedApp = null;
+  if (h.get("ids")) h.get("ids").split(",").slice(0,3).forEach(function(id, i){ if (ITEMS.some(function(c){return c.id===id;})) compareIds[i] = id; });
+  if (MATRIX && h.get("view") === "matrix") cmpView = "matrix";
+  if (MATRIX && h.get("needs") && recById(selectedApp)) NEEDS[selectedApp] = h.get("needs").split(",").filter(function(k){ return MATRIX.needs.indexOf(k)>=0; });
+  if (h.get("item") && ITEMS.some(function(c){return c.id===h.get("item");})) browseId = h.get("item");
+  if (h.get("wheel") && WHEEL.some(function(w){return w.id===h.get("wheel");})) { selectedWheel = h.get("wheel"); paintWheel(); }
+})();
+render();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en-ZA">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Custom Shim Builder — Yellotec</title>
+<link rel="stylesheet" href="../assets/yt-template.css"/>
+<style>
+.shim-wrap { display:grid; grid-template-columns: minmax(0,0.95fr) minmax(0,1.1fr) minmax(0,1.25fr); gap:16px; max-width:1280px; margin:16px auto; padding:0 18px; align-items:start; }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; }
+.fld label { display:block; font-size:0.74rem; font-weight:700; color:var(--black); margin-bottom:3px; }
+.fld label span { font-weight:400; color:var(--soft); }
+.fld input, .fld select { width:100%; padding:8px 9px; font-size:0.9rem; font-family:inherit; border:1.5px solid var(--black); border-radius:8px; color:var(--black); background:var(--white); }
+.fld input:focus, .fld select:focus { outline:3px solid var(--yellow); outline-offset:0; }
+.fld.full { grid-column:1 / -1; }
+.msg { font-size:0.76rem; border-radius:6px; padding:6px 9px; margin:6px 0 0; line-height:1.35; }
+.msg.warn { background:#fff3e6; border-left:4px solid var(--orange); color:var(--black); }
+.msg.err { background:var(--black); border-left:4px solid var(--orange); color:#FFFFFF; }
+.msg.ok { background:#fffbe0; border-left:4px solid var(--yellow); color:var(--black); }
+.btn { display:inline-block; padding:9px 13px; border:2px solid var(--black); border-radius:8px; background:var(--yellow); color:var(--black); font-weight:700; font-size:0.84rem; cursor:pointer; font-family:inherit; }
+.btn:hover { background:var(--orange); }
+.btn.ghost { background:var(--white); }
+.btn.ghost:hover { background:#fff6c2; }
+.btn.sm { padding:4px 9px; font-size:0.74rem; }
+.btn-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+.draw-box { background:#000000; border-radius:10px; padding:8px; border:2px solid var(--yellow); }
+.draw-box svg { width:100%; height:auto; display:block; }
+.draw-cap { font-size:0.74rem; color:#FFFFFF; padding:4px 6px 2px; }
+.card { border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin:0 0 10px; background:#fff; }
+.card.best { border-left:5px solid var(--yellow); background:#fffceb; }
+.card.alt { border-left:5px solid var(--orange); }
+.card h3 { margin:0 0 4px; font-size:0.92rem; color:var(--black); }
+.badge { display:inline-block; font-size:0.68rem; font-weight:700; background:var(--black); color:#FFFFFF; border-left:3px solid var(--yellow); padding:2px 8px; border-radius:999px; margin:0 6px 6px 0; }
+.badge.or { border-left-color:var(--orange); }
+.line { font-family:Arial, Helvetica, sans-serif; font-size:0.86rem; background:var(--lt); border:1px solid var(--border); border-radius:6px; padding:8px 10px; margin:6px 0 0; color:var(--black); word-break:break-word; }
+.meta { font-size:0.74rem; color:var(--soft); margin-top:6px; line-height:1.4; }
+table.spec { width:100%; border-collapse:collapse; font-size:0.76rem; margin:8px 0; }
+table.spec th, table.spec td { border:1px solid var(--border); padding:5px 7px; text-align:left; vertical-align:top; }
+table.spec th { background:var(--lt); color:var(--black); }
+table.spec td.c { text-align:center; }
+.order-out { white-space:pre-wrap; font-size:0.82rem; background:var(--white); border:1.5px dashed var(--black); border-radius:8px; padding:10px; min-height:44px; color:var(--black); }
+.copied { font-size:0.76rem; font-weight:700; color:var(--black); background:var(--yellow); padding:3px 8px; border-radius:999px; display:none; }
+.copied.show { display:inline-block; }
+.view { display:none; } .view.is-on { display:block; }
+.radio-row { display:flex; gap:12px; flex-wrap:wrap; font-size:0.8rem; margin-top:6px; }
+.radio-row label { display:flex; gap:5px; align-items:center; cursor:pointer; }
+.radio-row input { accent-color:#000000; }
+.stack-res { font-size:0.86rem; margin-top:8px; }
+.stack-res b { color:var(--black); }
+@media (max-width:1000px) { .shim-wrap { grid-template-columns:minmax(0,1fr); } }
+</style>
+</head>
+<body>
+<div class="topbar"></div>
+<header class="yt-header">
+  <img class="yt-logo" src="../assets/yellotec-logo-landscape-black.svg" alt="Yellotec"/>
+  <div class="titles">
+    <h1>Custom Shim Builder</h1>
+    <p class="sub">Series 300 stainless steel slotted machine shims in packets of 10. Standard pre-cut sizes first (preferred, cheaper); custom sizes when the foot or bolt needs it.</p>
+  </div>
+  <div class="yt-partner">
+    <img src="../assets/budget-engineering-logo.png" alt="Budget Engineering Services" width="257" height="84"/>
+    <small>Shims by Budget Engineering SA</small>
+  </div>
+</header>
+<nav class="tabs" role="tablist">
+  <button type="button" class="tab is-on" data-tab="build">Build</button>
+  <button type="button" class="tab" data-tab="stack">Stack helper</button>
+  <button type="button" class="tab" data-tab="parts">Standard parts</button>
+</nav>
+
+<main class="shim-wrap" id="mainWrap">
+  <!-- Inputs -->
+  <section class="panel">
+    <h2>Foot &amp; bolt</h2>
+    <div class="form-grid">
+      <div class="fld"><label for="inL">L · length <span>mm (50–1000)</span></label><input id="inL" type="number" min="50" max="1000" step="0.5" value="50" inputmode="decimal"/></div>
+      <div class="fld"><label for="inW">W · width <span>mm (50–1000)</span></label><input id="inW" type="number" min="50" max="1000" step="0.5" value="50" inputmode="decimal"/></div>
+      <div class="fld"><label for="inD">D · bolt diameter <span>mm</span></label><input id="inD" type="number" min="1" step="0.5" value="12" inputmode="decimal"/></div>
+      <div class="fld"><label for="inC">C · slot width <span>mm (auto)</span></label><input id="inC" type="number" min="1" step="0.5" inputmode="decimal"/></div>
+      <div class="fld"><label for="inS">Bolt centre from slot edge <span>mm (auto = slot depth − C/2)</span></label><input id="inS" type="number" min="1" step="0.5" inputmode="decimal" placeholder="auto"/></div>
+      <div class="fld"><label for="inT">T · thickness <span>mm</span></label><select id="inT"></select></div>
+      <div class="fld"><label for="inQ">Shims needed <span>qty</span></label><input id="inQ" type="number" min="1" step="1" value="4" inputmode="numeric"/></div>
+      <div class="fld"><label for="inRef">Line reference <span>optional</span></label><input id="inRef" type="text" maxlength="40" placeholder="e.g. Pump P-101 motor feet"/></div>
+    </div>
+    <div id="msgs"></div>
+    <div class="btn-row"><button type="button" class="btn ghost sm" id="autoC">Re-suggest C</button></div>
+    <div style="margin-top:12px" id="noteHow"></div>
+  </section>
+
+  <!-- Drawing -->
+  <section class="panel">
+    <h2>Shim drawing (to scale)</h2>
+    <div class="draw-box"><svg id="draw" viewBox="0 0 400 440" role="img" aria-label="Scaled shim drawing"></svg>
+      <div class="draw-cap" id="drawCap"></div></div>
+  </section>
+
+  <!-- Results -->
+  <section class="panel">
+    <h2 id="resTitle">Recommendation</h2>
+    <div class="results-head"><p class="count" id="resCount">—</p><p class="hint" id="resHint"></p></div>
+
+    <div class="view is-on" data-view="build">
+      <div id="recs"></div>
+      <div class="btn-row"><button type="button" class="btn" id="addLine">Add to order list</button></div>
+    </div>
+
+    <div class="view" data-view="stack">
+      <div class="card">
+        <h3>Total shim pack height</h3>
+        <p class="meta" style="margin-top:0">Enter the gap to fill (e.g. from your alignment move). The fewest shims that make the height exactly (in 0.05 mm steps) are suggested, using the size from <b>Foot &amp; bolt</b>. Uses 0.05–3 mm shims (incl. 0.9 mm); 4.5 and 6 mm are on request and left out.</p>
+        <div class="form-grid">
+          <div class="fld"><label for="gap">Required gap <span>mm</span></label><input id="gap" type="number" min="0.05" step="0.05" value="1.35" inputmode="decimal"/></div>
+          <div class="fld"><label for="feet">Feet to shim <span>qty</span></label><input id="feet" type="number" min="1" step="1" value="1" inputmode="numeric"/></div>
+        </div>
+        <div class="stack-res" id="stackRes"></div>
+        <div class="btn-row"><button type="button" class="btn" id="addStack">Add stack to order list</button></div>
+      </div>
+    </div>
+
+    <div class="view" data-view="parts">
+      <div id="partsTable"></div>
+    </div>
+
+    <div class="card" style="margin-top:6px">
+      <h3>Order list <span class="copied" id="copied">Copied</span></h3>
+      <div id="listTable"></div>
+      <div class="order-out" id="orderOut" aria-live="polite"></div>
+      <div class="btn-row">
+        <button type="button" class="btn" id="copyBtn">Copy list</button>
+        <button type="button" class="btn ghost" id="clearBtn">Clear list</button>
+      </div>
+    </div>
+    <div id="notesBottom"></div>
+    <a class="cta" id="cta" href="mailto:sales@yellotec.com?subject=Shim%20order%20request">Ask Yellotec<small>sales@yellotec.com · sends the order list</small></a>
+  </section>
+</main>
+<footer class="footer">
+  <span>Standard sizes and part numbers come from the BES pre-cut stainless steel shim list (Feb 2022), with thickness taken from the part-number code. Slot widths, wording and shim packs come from Yellotec QuoteWerks lines. No prices are shown. Lead time 1–2 weeks; expedite available.</span>
+  <span>Yellotec · Yellow Technical Services (Pty) Ltd · www.yellotec.co.za</span>
+</footer>
+<div class="bottombar"></div>
+<script>
+const STD = [{"letter": "A", "side": 50, "codes": ["005", "010", "020", "025", "040", "050", "070", "090", "100", "200", "300", "450", "600"]}, {"letter": "B", "side": 75, "codes": ["005", "010", "020", "025", "040", "050", "070", "090", "100", "200", "300", "450", "600"]}, {"letter": "C", "side": 100, "codes": ["005", "010", "020", "025", "040", "050", "070", "090", "100", "200", "300", "450", "600"]}, {"letter": "D", "side": 125, "codes": ["005", "010", "020", "025", "040", "050", "070", "090", "100", "200", "300", "450", "600"]}, {"letter": "F", "side": 150, "codes": ["005", "010", "020", "025", "040", "050", "070", "090", "100", "200", "300", "450", "600"], "pl_side": 200}, {"letter": "E", "side": 200, "codes": ["005", "010", "020", "025", "040", "050", "070", "090", "100", "200", "300", "450", "600"], "pl_side": 150}, {"letter": "G", "side": 250, "codes": ["005", "010", "020", "025", "040", "050", "070", "090", "100", "200", "300", "450", "600"]}];            // [{letter, side, codes[]}] from the price list (sizes + part numbers only)
+const THK_STD = [{"t": 0.05, "code": "005"}, {"t": 0.1, "code": "010"}, {"t": 0.2, "code": "020"}, {"t": 0.25, "code": "025"}, {"t": 0.4, "code": "040"}, {"t": 0.5, "code": "050"}, {"t": 0.7, "code": "070"}, {"t": 0.9, "code": "090"}, {"t": 1.0, "code": "100"}, {"t": 2.0, "code": "200"}, {"t": 3.0, "code": "300"}, {"t": 4.5, "code": "450"}, {"t": 6.0, "code": "600"}];    // standard thickness codes (thickness = code / 100)
+const THK_ALL = [0.05, 0.1, 0.2, 0.25, 0.4, 0.5, 0.7, 0.9, 1, 2, 3, 4.5, 6];    // thicknesses offered in the builder (all standard)
+const ISSUES = [{"part": "A025", "desc": "Pre-Cut, S/S, Shim 50x50x0.025mm,Pct of 10", "descT": "0.025", "codeT": 0.25}, {"part": "B025", "desc": "Pre-Cut, S/S, Shim 75x75x0.025mm,Pct of 10", "descT": "0.025", "codeT": 0.25}, {"part": "C025", "desc": "Pre-Cut, S/S, Shim 100x100x0.025mm,Pct of 10", "descT": "0.025", "codeT": 0.25}, {"part": "D025", "desc": "Pre-Cut, S/S, Shim 125x125x0.025mm,Pct of 10", "descT": "0.025", "codeT": 0.25}, {"part": "E025", "desc": "Pre-Cut, S/S, Shim 150x150x0.025mm,Pct of 10", "descT": "0.025", "codeT": 0.25}, {"part": "E100", "desc": "Pre-Cut, S/S, Shim 150x150x0.1mm,Pct of 10", "descT": "0.1", "codeT": 1.0}, {"part": "E200", "desc": "Pre-Cut, S/S, Shim 150x150x0.2mm,Pct of 10", "descT": "0.2", "codeT": 2.0}, {"part": "E300", "desc": "Pre-Cut, S/S, Shim 150x150x0.3mm,Pct of 10", "descT": "0.3", "codeT": 3.0}, {"part": "E450", "desc": "Pre-Cut, S/S, Shim 150x150x0.4.5mm,Pct of 10", "descT": "0.4.5", "codeT": 4.5}, {"part": "E600", "desc": "Pre-Cut, S/S, Shim 150x150x0.6mm,Pct of 10", "descT": "0.6", "codeT": 6.0}, {"part": "F025", "desc": "Pre-Cut, S/S, Shim 200x200x0.025mm,Pct of 10", "descT": "0.025", "codeT": 0.25}, {"part": "G025", "desc": "Pre-Cut, S/S, Shim 250x250x0.025mm,Pct of 10", "descT": "0.025", "codeT": 0.25}];      // description vs part-number thickness mismatches in the price list
+const KITS = [{"code": "AB 400", "pcs": 400, "sizes": ["A 50", "B 75"], "rows": [{"t": [0.05, 0.1, 0.2, 0.25, 0.4, 0.5, 0.7, 1.0, 2.0, 3.0], "qty": 20}]}, {"code": "ABC 360", "pcs": 360, "sizes": ["A 50", "B 75", "C 100"], "rows": [{"t": [0.05, 0.1, 0.25, 0.5, 1.0, 2.0], "qty": 20}]}, {"code": "ABC 360L", "pcs": 360, "sizes": ["A 50", "B 75", "C 100"], "rows": [{"t": [0.05, 0.1, 0.2, 0.5, 0.7, 1.0], "qty": 20}]}, {"code": "ABC 510", "pcs": 510, "sizes": ["A 50", "B 75", "C 100"], "rows": [{"t": [0.05, 0.1, 0.2, 0.25, 0.4, 0.5, 0.7, 1.0], "qty": 20}, {"t": [2.0], "qty": 10}]}, {"code": "ABC 600", "pcs": 600, "sizes": ["A 50", "B 75", "C 100"], "rows": [{"t": [0.05, 0.1, 0.2, 0.25, 0.4, 0.5, 0.7, 1.0, 2.0, 3.0], "qty": 20}]}, {"code": "ABCD 720", "pcs": 720, "sizes": ["A 50", "B 75", "C 100", "D 125"], "rows": [{"t": [0.05, 0.1, 0.2, 0.25, 0.4, 0.5, 0.7, 1.0, 2.0], "qty": 20}]}, {"code": "ABCD 740", "pcs": 740, "sizes": ["A 50", "B 75", "C 100", "D 125"], "rows": [{"t": [0.05, 0.1, 0.2, 0.25, 0.4, 0.5, 0.7, 1.0, 2.0], "qty": 20}, {"t": [3.0], "qty": 5}]}, {"code": "BCD 360", "pcs": 360, "sizes": ["B 75", "C 100", "D 125"], "rows": [{"t": [0.05, 0.1, 0.25, 0.5, 1.0, 2.0], "qty": 20}]}, {"code": "BCD 360L", "pcs": 360, "sizes": ["B 75", "C 100", "D 125"], "rows": [{"t": [0.05, 0.1, 0.2, 0.5, 0.7, 1.0], "qty": 20}]}, {"code": "C 190", "pcs": 190, "sizes": ["C 100"], "rows": [{"t": [0.05, 0.1, 0.2, 0.25, 0.4, 0.5, 0.7, 1.0, 2.0], "qty": 20}, {"t": [3.0], "qty": 10}]}, {"code": "CD 340", "pcs": 340, "sizes": ["C 100", "D 125"], "rows": [{"t": [0.05, 0.1, 0.2, 0.25, 0.4, 0.5, 0.7, 1.0], "qty": 20}, {"t": [2.0], "qty": 10}]}, {"code": "CD 400", "pcs": 400, "sizes": ["C 100", "D 125"], "rows": [{"t": [0.05, 0.1, 0.2, 0.25, 0.4, 0.5, 0.7, 1.0, 2.0, 3.0], "qty": 20}]}, {"code": "D 175", "pcs": 175, "sizes": ["D 125"], "rows": [{"t": [0.05, 0.1, 0.2, 0.25, 0.4, 0.5, 0.7, 1.0], "qty": 20}, {"t": [2.0], "qty": 10}, {"t": [3.0], "qty": 5}]}, {"code": "E 90", "pcs": 90, "sizes": ["E 200"], "rows": [{"t": [0.05, 0.1, 0.2, 0.25, 0.4, 0.5, 0.7, 1.0], "qty": 10}, {"t": [2.0], "qty": 5}, {"t": [3.0], "qty": 5}]}, {"code": "F 90", "pcs": 90, "sizes": ["F 150"], "rows": [{"t": [0.05, 0.1, 0.2, 0.25, 0.4, 0.5, 0.7, 1.0], "qty": 10}, {"t": [2.0], "qty": 5}, {"t": [3.0], "qty": 5}]}];          // cased kits, Series 300 (user's BES xlsx, KIT sheet; no prices)
+const DEPTH = {"A": 39, "B": 55, "C": 77, "D": 95, "F": 109, "E": 148, "G": 184};        // standard slot depth (mm): bottom edge to top of slot arc (BES flyer)
+const MARK = ["M196.64 99.2891C196.64 99.2891 192.92 97.8291 190.95 97.1691C174.88 91.8191 157.46 100.539 152.11 116.609C146.76 132.679 155.48 150.099 171.55 155.459C173.52 156.109 177.21 157.659 177.21 157.659C205.59 170.329 220.33 202.809 210.31 232.899C206.76 243.559 200.54 252.599 192.65 259.519C216.66 250.929 236.65 231.809 245.31 205.789C259.62 162.799 237.91 116.329 196.64 99.2991V99.2891Z", "M167.71 166.959C165.76 166.309 162.09 164.629 162.09 164.629C143.32 155.269 133.78 133.239 140.59 112.779C146.13 98.5293 185.13 40.0293 221.32 6.56934C171.71 40.1893 105.62 83.5293 82.32 151.529C68.01 194.529 89.72 240.989 130.99 258.019C130.99 258.019 134.73 259.489 136.68 260.139C162.37 268.699 190.23 254.749 198.78 229.059C207.33 203.369 193.39 175.519 167.7 166.959H167.71Z", "M79.86 26.5198C118.35 1.93981 166.8 -6.00019 211.19 4.57981C206.06 6.87981 201.25 9.79981 196.2 12.2498C194.64 13.1498 192.83 12.4598 191.17 12.3798C151.57 6.97981 110.14 17.4098 77.72 40.7498C45.24 63.8098 22.06 99.4798 14.23 138.54C5.82 178.78 13.92 222.11 36.23 256.62C56.76 288.82 89.25 313.12 125.96 323.66C164.38 334.97 207.03 331 242.67 312.72C273.35 297.27 298.71 271.53 313.73 240.64C332.54 202.67 335.15 157.1 320.82 117.22C305.14 72.1398 268.02 35.1198 222.75 19.8698C224.84 16.5598 227.03 13.2998 229.22 10.0498C266.71 23.2098 299.09 50.1198 319.2 84.3498C338.09 116.19 346.18 154.27 341.87 191.04C337.93 225.91 322.97 259.49 299.49 285.6C277.82 310.08 248.94 328.03 217.43 336.74C177.54 347.96 133.65 343.95 96.45 325.72C62.2 309.15 33.83 280.78 17.26 246.53C-1.96 207.36 -5.32 160.76 8.14 119.26C20.16 81.1898 46.08 47.7698 79.86 26.5198Z"];          // Yellotec mark paths (343 x 343 units)
+const SLOTS = {"A": 16, "B": 22, "C": 32, "D": 45, "F": 50, "E": 55, "G": 68};        // built-in standard slot widths (mm), per Yellotec QuoteWerks lines
+const PACKS = [{"part": "A-PAK", "letter": "A", "mass": 0.35}, {"part": "B-PAK", "letter": "B", "mass": 0.72}, {"part": "C-PAK", "letter": "C", "mass": 1.19}, {"part": "D-PAK", "letter": "D", "mass": 1.76}, {"part": "E-PAK", "letter": "E", "mass": 4.74}, {"part": "F-PAK", "letter": "F", "mass": 2.61}];        // shim packs (assortments): 10 pcs each of 0.05, 0.1, 0.25, 0.5 and 1 mm
+const PACK_SIZE = {"A": 50, "B": 75, "C": 100, "D": 125, "F": 150, "E": 200};    // pack letter -> size (confirmed letter scheme; E-PAK = 200, F-PAK = 150; no G pack)
+const PACK_GUESS = {};  // unused (kept empty)
+const MATERIAL = "Series 300 SS";
+const LEAD = "Lead time: 1–2 weeks (standard & custom). Expedited 3–5 day delivery available at an expedite price — ask Yellotec.";
+const PACK = 10;
+const SLOT_KEY = "yt-shim-slot-overrides";   // only user overrides are stored; built-ins come from SLOTS
+let SLOT_OVR = {};
+try { var saved = JSON.parse(localStorage.getItem(SLOT_KEY) || "null"); if (saved && typeof saved === "object") SLOT_OVR = saved; } catch(e) {}
+function slotOf(letter){ return (SLOT_OVR[letter] != null) ? Number(SLOT_OVR[letter]) : SLOTS[letter]; }
+
+let tab = "build", choice = "std", cTouched = false;
+let LIST = [];
+try { LIST = JSON.parse(localStorage.getItem("yt-shim-list") || "[]") || []; } catch(e) { LIST = []; }
+var NOTE_OPEN = {};
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function fmt(n){ if (n==null || isNaN(n)) return "?"; return String(Math.round(n*100)/100); }
+function num(id){ var v = parseFloat($(id).value); return isNaN(v) ? null : v; }
+function noteBox(key, title, bodyHtml, dark){
+  var open = !!NOTE_OPEN[key];
+  return '<div class="yt-note'+(dark?' dark':'')+(open?' is-open':'')+'" data-note="'+esc(key)+'"><div class="yt-note-head"><strong>'+esc(title)+'</strong>'+
+    '<button type="button" class="yt-note-toggle" aria-expanded="'+(open?'true':'false')+'">'+(open?'Hide':'Show')+'</button></div><div class="yt-note-body">'+bodyHtml+'</div></div>';
+}
+document.addEventListener("click", function(e){
+  var btn = e.target.closest ? e.target.closest(".yt-note-toggle") : null; if (!btn) return;
+  var box = btn.closest(".yt-note"), open = !box.classList.contains("is-open");
+  box.classList.toggle("is-open", open); btn.textContent = open ? "Hide" : "Show"; btn.setAttribute("aria-expanded", open?"true":"false");
+  NOTE_OPEN[box.getAttribute("data-note")] = open;
+});
+
+// ---------- Core logic ----------
+function suggestC(D){ if (!D) return null; var m = D + 2; return Math.floor(m) + 1; }   // next whole mm strictly above D + 2
+var ONREQ_MIN = 3.0001;   // thicknesses over 3 mm (4.5, 6; also 8 and 10 mm) are on request (supplier price list)
+function onReq(t){ return t > ONREQ_MIN; }
+var ONREQ_TXT = "On request – confirm availability and lead time with Yellotec.";
+function thkCode(t){ var r = THK_STD.find(function(x){ return Math.abs(x.t - t) < 1e-9; }); return r ? r.code : null; }
+function packets(q){ return Math.max(1, Math.ceil((q||0) / PACK)); }
+
+function readInputs(){
+  var L = num("inL"), W = num("inW"), D = num("inD"), C = num("inC"), S = num("inS"), T = parseFloat($("inT").value), Q = Math.max(1, Math.round(num("inQ") || 1));
+  if (!cTouched || C == null) { C = suggestC(D); $("inC").value = C == null ? "" : C; }
+  var Sauto = (S == null);
+  var dep = depthFor(L, W);
+  if (Sauto && L) S = dep && C ? Math.max(dep.d - C / 2, C / 2) : L / 2;
+  return { L:L, W:W, D:D, C:C, S:S, Sauto:Sauto, T:T, Q:Q, dep:dep, ref:$("inRef").value.trim() };
+}
+
+function validate(v){
+  var m = [];
+  if (!v.L || !v.W || !v.D || !v.C) { m.push(["err","Enter L, W and D (mm)."]); return m; }
+  if (v.C <= v.D + 2) m.push(["err","C must be more than 2 mm larger than D (C > "+fmt(v.D+2)+" mm)."]);
+  if (v.C >= v.W) m.push(["err","Slot C ("+fmt(v.C)+" mm) is as wide as or wider than the shim (W "+fmt(v.W)+" mm)."]);
+  else if ((v.W - v.C) / 2 < 5) m.push(["warn","Only "+fmt((v.W-v.C)/2)+" mm of material each side of the slot. Check the shim is stiff enough."]);
+  if (v.S != null) {
+    if (v.S + v.C / 2 >= v.L) m.push(["err","Slot end (bolt centre + C/2 = "+fmt(v.S + v.C/2)+" mm) reaches the top edge (L "+fmt(v.L)+" mm)."]);
+    else if (v.L - (v.S + v.C/2) < 5) m.push(["warn","Less than 5 mm of material above the slot end."]);
+    if (v.S < v.C / 2) m.push(["err","Bolt centre is closer to the edge than the slot radius."]);
+  }
+  if (onReq(v.T)) m.push(["warn", fmt(v.T)+" mm: "+ONREQ_TXT]);
+  if (v.L < 50 || v.W < 50) m.push(["err","Minimum shim size is 50 x 50 mm (L and W must each be at least 50 mm)."]);
+  if (v.L > 1000 || v.W > 1000) m.push(["err","Maximum shim size is 1000 x 1000 mm (L and W must each be at most 1000 mm)."]);
+  return m;
+}
+
+function depthFor(L, W){
+  // Standard size: supplier slot depth. Other sizes: same depth/L ratio as the nearest standard size.
+  if (!L) return null;
+  var ex = STD.find(function(s){ return s.side === L && s.side === W; });
+  if (ex && DEPTH[ex.letter]) return { d:DEPTH[ex.letter], std:true, letter:ex.letter };
+  var nb = STD.slice().sort(function(a,b){ return Math.abs(a.side-L) - Math.abs(b.side-L); })[0];
+  return { d: Math.round(L * DEPTH[nb.letter] / nb.side * 10) / 10, std:false, letter:nb.letter };
+}
+function standardFor(v){
+  var code = thkCode(v.T);
+  var need = Math.max(v.L||0, v.W||0), skipped = [];
+  if (!code) return { ok:false, reason: fmt(v.T)+" mm has no standard part number." };
+  for (var i=0;i<STD.length;i++){
+    var s = STD[i];
+    if (s.side < need) continue;
+    var slot = slotOf(s.letter);
+    if (slot < v.C) { skipped.push(s.letter+" ("+s.side+" x "+s.side+", slot "+fmt(slot)+" mm < C "+fmt(v.C)+" mm)"); continue; }
+    return { ok:true, letter:s.letter, side:s.side, part:s.letter+code, exact:(s.side===v.L && s.side===v.W), slot:slot, skipped:skipped };
+  }
+  var reason = need > STD[STD.length-1].side ? ("Foot "+fmt(v.L)+" x "+fmt(v.W)+" mm is larger than the biggest standard size ("+STD[STD.length-1].side+" x "+STD[STD.length-1].side+" mm).") : "No standard size has a large enough slot.";
+  if (skipped.length) reason += " Skipped: " + skipped.join("; ") + ".";
+  return { ok:false, reason:reason };
+}
+
+function stdLine(st, v, q){
+  return st.part+" – "+st.letter+"-Packet, Shim "+st.side+" x "+st.side+" x "+fmt(st.slot)+"mm slot, "+MATERIAL+", "+packets(q)+" x packet of "+PACK+" shims, t (mm) = "+fmt(v.T)+(onReq(v.T)?", on request":"");
+}
+function customLine(v, q){
+  return "Custom-Packet, Shim "+fmt(v.L)+" x "+fmt(v.W)+" x "+fmt(v.C)+"mm slot, "+MATERIAL+", "+packets(q)+" x packet of "+PACK+" shims, t (mm) = "+fmt(v.T)+(onReq(v.T)?", on request":"");
+}
+function packDesc(pk){ return "Shim Pack "+pk.letter+", 10 pcs of ea (0.05, 0.1, 0.25, 0.5 & 1mm), "+MATERIAL+", t (mm) = 19; T (inch) = 0.748; Mass (kg) = "+pk.mass; }
+function packLine(pk, n){ return pk.part+" – "+packDesc(pk)+", "+n+" x pack"; }
+function packSizeTxt(pk){ return PACK_SIZE[pk.letter] ? (PACK_SIZE[pk.letter]+" x "+PACK_SIZE[pk.letter]) : "—"; }
+function packForSide(side){
+  // Pack letter = shim size letter (E-PAK = 200 x 200, F-PAK = 150 x 150). No pack for 250 x 250 (G).
+  var hit = PACKS.find(function(pk){ return PACK_SIZE[pk.letter] === side; });
+  if (hit) return { pk:hit, confirmed:true };
+  hit = PACKS.find(function(pk){ return PACK_GUESS[pk.letter] === side; });
+  return hit ? { pk:hit, confirmed:false } : null;
+}
+
+// ---------- Drawing ----------
+function drawShim(v){
+  var svg = $("draw");
+  if (!v.L || !v.W || !v.C) { svg.innerHTML = ''; $("drawCap").textContent = ''; return; }
+  var L=v.L, W=v.W, D=v.D||0;
+  var C=Math.min(v.C, W*0.9), r=C/2;
+  var S=Math.min(Math.max(v.S||L/2, r*1.05), L - r - 1);      // bolt centre from bottom (slot entry) edge
+  var cx=W/2, yb=L-S;                                          // bolt centre (y down, body top = 0)
+  // Indicative styling (proportional): corner radius, tab, fillets, slot lead-in
+  var rc=Math.min(0.06*Math.min(W,L), 12);
+  var tw=Math.min(0.38*W, W-2*rc-4), th=0.27*L;
+  var rt=Math.min(0.18*tw, 0.3*th), f=Math.min(rt, (W-tw)/2-rc-1, th-rt-0.5); if (f<0) f=0;
+  var flareH=Math.min(0.22*L, 0.8*S);
+  var ro=Math.min(r+0.35*C, cx-rc-2); if (ro<r) ro=r;           // half-width of the flared opening at the bottom edge
+  var yf=L-flareH;
+  var rf=Math.min(0.25*flareH, 0.15*C, 4);
+  var VB_W=400, VB_H=440, padL=58, padR=58, padT=18, padB=62;
+  var sc=Math.min((VB_W-padL-padR)/W, (VB_H-padT-padB)/(L+th));
+  var ox=padL+((VB_W-padL-padR)-W*sc)/2, oy=padT+th*sc+((VB_H-padT-padB)-(L+th)*sc)/2;
+  function X(x){ return (ox+x*sc).toFixed(2); } function Y(y){ return (oy+y*sc).toFixed(2); }
+  function P(x,y){ return X(x)+" "+Y(y); }
+  // flare unit vectors (from bottom-edge corner up to the parallel slot side)
+  var lx0=cx-ro, lx1=cx-r, len=Math.hypot(lx1-lx0, L-yf) || 1, ux=(lx1-lx0)/len, uy=(yf-L)/len;
+  var d = "M"+P(rc,L)+
+    " L"+P(lx0-rf,L)+" Q"+P(lx0,L)+" "+P(lx0+ux*rf, L+uy*rf)+
+    " L"+P(cx-r,yf)+" L"+P(cx-r,yb)+
+    " A"+(r*sc).toFixed(2)+" "+(r*sc).toFixed(2)+" 0 0 1 "+P(cx+r,yb)+
+    " L"+P(cx+r,yf)+" L"+P(cx+ro-ux*rf, L+uy*rf)+" Q"+P(cx+ro,L)+" "+P(cx+ro+rf,L)+
+    " L"+P(W-rc,L)+" Q"+P(W,L)+" "+P(W,L-rc)+
+    " L"+P(W,rc)+" Q"+P(W,0)+" "+P(W-rc,0)+
+    " L"+P(cx+tw/2+f,0)+" Q"+P(cx+tw/2,0)+" "+P(cx+tw/2,-f)+
+    " L"+P(cx+tw/2,-th+rt)+" Q"+P(cx+tw/2,-th)+" "+P(cx+tw/2-rt,-th)+
+    " L"+P(cx-tw/2+rt,-th)+" Q"+P(cx-tw/2,-th)+" "+P(cx-tw/2,-th+rt)+
+    " L"+P(cx-tw/2,-f)+" Q"+P(cx-tw/2,0)+" "+P(cx-tw/2-f,0)+
+    " L"+P(rc,0)+" Q"+P(0,0)+" "+P(0,rc)+
+    " L"+P(0,L-rc)+" Q"+P(0,L)+" "+P(rc,L)+" Z";
+  var h = '<defs><marker id="ar" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#FFFFFF"/></marker></defs>';
+  h += '<path d="'+d+'" fill="#262626" stroke="#FFD100" stroke-width="2.5" stroke-linejoin="round"/>';
+  // Tab: Yellotec mark + YELLOTEC
+  var tabPx=th*sc, tabW=tw*sc, ms=Math.min(tabPx*0.5, tabW*0.6), fs=Math.max(5, Math.min(tabPx*0.15, tabW/7.5));
+  var gap=fs*0.5, blockH=ms+gap+fs, top=oy-tabPx+(tabPx-blockH)/2;
+  h += '<g transform="translate('+(ox+cx*sc-ms/2).toFixed(2)+' '+top.toFixed(2)+') scale('+(ms/343).toFixed(4)+')">'+MARK.map(function(p){ return '<path d="'+p+'" fill="#FFD100"/>'; }).join('')+'</g>';
+  h += '<text x="'+X(cx)+'" y="'+(top+ms+gap+fs*0.85).toFixed(2)+'" fill="#FFFFFF" font-family="Arial" font-size="'+fs.toFixed(1)+'" font-weight="700" letter-spacing="'+(fs*0.18).toFixed(2)+'" text-anchor="middle">YELLOTEC</text>';
+  // Bolt circle (full) + centre mark
+  if (D>0) h += '<circle cx="'+X(cx)+'" cy="'+Y(yb)+'" r="'+(D/2*sc).toFixed(2)+'" fill="none" stroke="#FF6600" stroke-width="1.6"/>';
+  var cm=Math.max(2, Math.min(4, r*0.3));
+  h += '<line x1="'+X(cx)+'" y1="'+Y(yb-cm)+'" x2="'+X(cx)+'" y2="'+Y(yb+cm)+'" stroke="#9A9A9A" stroke-width="0.7"/><line x1="'+X(cx-cm)+'" y1="'+Y(yb)+'" x2="'+X(cx+cm)+'" y2="'+Y(yb)+'" stroke="#9A9A9A" stroke-width="0.7"/>';
+  function arrowLine(x1,y1,x2,y2){ return '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="#FFFFFF" stroke-width="1" marker-start="url(#ar)" marker-end="url(#ar)"/>'; }
+  function ext(x1,y1,x2,y2){ return '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="#BDBDBD" stroke-width="0.8" stroke-dasharray="4 3"/>'; }
+  function label(x,y,t,rot){ return '<text x="'+x+'" y="'+y+'" fill="#FFFFFF" font-family="Arial" font-size="12" font-weight="700" text-anchor="middle"'+(rot?' transform="rotate(-90 '+x+' '+y+')"':'')+'>'+t+'</text>'; }
+  // L (left, body only), dashed extension lines
+  var xL=(parseFloat(X(0))-24).toFixed(2);
+  h += ext(X(0), Y(0), (parseFloat(xL)-5).toFixed(2), Y(0)) + ext(X(0), Y(L), (parseFloat(xL)-5).toFixed(2), Y(L));
+  h += arrowLine(xL, Y(0), xL, Y(L)) + label((parseFloat(xL)-6).toFixed(2), ((parseFloat(Y(0))+parseFloat(Y(L)))/2).toFixed(2), "L "+fmt(L), true);
+  // W (below), dashed extension lines
+  var yW=(parseFloat(Y(L))+28).toFixed(2);
+  h += ext(X(0), Y(L), X(0), (parseFloat(yW)+5).toFixed(2)) + ext(X(W), Y(L), X(W), (parseFloat(yW)+5).toFixed(2));
+  h += arrowLine(X(0), yW, X(W), yW) + label(X(cx), (parseFloat(yW)+15).toFixed(2), "W "+fmt(W));
+  // C across the slot just above the flare start
+  var yC = Math.max(yb + r*0.3, yf - Math.min(0.05*L, (yf-yb)*0.4));
+  h += arrowLine(X(cx-r), Y(yC), X(cx+r), Y(yC));
+  var cLabelRight = (C*sc < 42);
+  h += cLabelRight ? '<text x="'+(parseFloat(X(cx+r))+6).toFixed(2)+'" y="'+(parseFloat(Y(yC))+4).toFixed(2)+'" fill="#FFFFFF" font-family="Arial" font-size="12" font-weight="700">C '+fmt(v.C)+'</text>'
+                   : label(X(cx), (parseFloat(Y(yC))-5).toFixed(2), "C "+fmt(v.C));
+  // D across the bolt circle
+  if (D>0) {
+    h += arrowLine(X(cx-D/2), Y(yb), X(cx+D/2), Y(yb));
+    var dy = (parseFloat(Y(yb - Math.max(D/2, r))) - 6).toFixed(2);
+    h += label(X(cx), dy, "Ø D "+fmt(D));
+  }
+  // Slot depth (right side): bottom edge to top of slot arc = S + C/2
+  var depth = S + r, xS=(parseFloat(X(W))+24).toFixed(2);
+  h += ext(X(cx+r), Y(yb-r), (parseFloat(xS)+5).toFixed(2), Y(yb-r)) + ext(X(W), Y(L), (parseFloat(xS)+5).toFixed(2), Y(L));
+  h += arrowLine(xS, Y(yb-r), xS, Y(L)) + label((parseFloat(xS)+15).toFixed(2), ((parseFloat(Y(yb-r))+parseFloat(Y(L)))/2).toFixed(2), "Slot depth "+fmt(depth), true);
+  svg.innerHTML = h;
+  $("drawCap").textContent = "Shim "+fmt(L)+" × "+fmt(W)+" mm · slot C "+fmt(v.C)+" mm · bolt Ø "+fmt(D)+" mm at "+fmt(S)+" mm from slot edge"+(v.Sauto?" (auto)":"")+" · slot depth "+fmt(S + r)+" mm"+(v.dep ? (v.Sauto ? (v.dep.std ? " (supplier, "+v.dep.letter+")" : " (scaled from "+v.dep.letter+")") : " (from your bolt centre)") : "")+" · T "+fmt(v.T)+" mm · to scale for L, W, C, D and slot depth; tab, corner radii and slot lead-in are indicative";
+}
+
+// ---------- Rendering ----------
+function renderMsgs(m){ $("msgs").innerHTML = m.map(function(x){ return '<div class="msg '+x[0]+'">'+esc(x[1])+'</div>'; }).join(''); }
+var CUR = null;
+function renderBuild(){
+  var v = readInputs(); var m = validate(v); renderMsgs(m); drawShim(v);
+  var bad = m.some(function(x){ return x[0]==="err"; });
+  var st = bad ? { ok:false, reason:"Fix the inputs first." } : standardFor(v);
+  CUR = { v:v, st:st, bad:bad };
+  if (tab !== "build") return;
+  $("resTitle").textContent = "Recommendation";
+  $("resCount").textContent = st.ok ? (st.exact ? "Exact standard size" : "Standard size fits") : "Custom shim";
+  $("resHint").textContent = fmt(v.Q)+" shims → "+packets(v.Q)+" × packet of "+PACK+" ("+(packets(v.Q)*PACK)+" shims).";
+  var h = '';
+  if (st.ok) {
+    if (choice !== "custom") choice = "std";
+    h += '<div class="card best"><span class="badge">Standard – preferred, cheaper</span>'+(st.exact?'<span class="badge">Exact standard size</span>':'<span class="badge or">Next standard size up</span>')+
+         '<h3>'+esc(st.part)+' · '+st.side+' x '+st.side+' mm pre-cut SS shim</h3><div class="line">'+esc(stdLine(st, v, v.Q))+'</div>'+
+         '<div class="meta">'+(st.exact?'':'Foot '+fmt(v.L)+' x '+fmt(v.W)+' mm fits the '+st.side+' x '+st.side+' mm standard shim (overhang is fine). ')+
+         'Standard slot '+fmt(st.slot)+' mm ≥ C '+fmt(v.C)+' mm. Slot depth '+DEPTH[st.letter]+' mm.'+
+         ((!v.Sauto && v.S + v.C/2 > DEPTH[st.letter]) ? ' <b>Check fit:</b> your bolt centre + C/2 = '+fmt(v.S + v.C/2)+' mm is deeper than the standard slot ('+DEPTH[st.letter]+' mm).' : '')+
+         (st.skipped && st.skipped.length ? ' Skipped: '+esc(st.skipped.join('; '))+'.' : '')+'<br/>'+(onReq(v.T)?'<b>'+esc(ONREQ_TXT)+'</b><br/>':'')+esc(LEAD)+'</div></div>';
+    var pf = packForSide(st.side);
+    if (pf) {
+      h += '<div class="card"><span class="badge">Or a Shim Pack ('+esc(pf.pk.part)+'): 50 shims, 5 thicknesses</span>'+
+           '<div class="line">'+esc(packLine(pf.pk, 1))+'</div><div class="meta">Good for alignment jobs: 10 each of 0.05, 0.1, 0.25, 0.5 and 1 mm. '+
+           'Pack size '+esc(packSizeTxt(pf.pk))+'.'+
+           '</div><div class="btn-row"><button type="button" class="btn ghost sm" id="addPack" data-pack="'+esc(pf.pk.letter)+'">Add pack</button></div></div>';
+    }
+  } else {
+    choice = "custom";
+    h += '<div class="card"><span class="badge or">No standard match</span><div class="meta" style="margin-top:0">'+esc(st.reason)+'</div></div>';
+  }
+  if (bad) h += '<div class="card alt"><span class="badge or">Custom not possible</span><div class="meta" style="margin-top:0">Fix the errors above. Custom shims are made from 50 x 50 mm up to 1000 x 1000 mm.</div></div>';
+  else h += '<div class="card alt"><span class="badge or">Custom alternative</span><h3>Made to size '+fmt(v.L)+' x '+fmt(v.W)+' mm</h3><div class="line">'+esc(customLine(v, v.Q))+'</div>'+
+       '<div class="meta">Use when the standard shim does not fit the foot, slot or bolt position. Packets of '+PACK+'.<br/>'+(onReq(v.T)?'<b>'+esc(ONREQ_TXT)+'</b><br/>':'')+esc(LEAD)+'</div></div>';
+  if (st.ok) h += '<div class="radio-row"><label><input type="radio" name="useC" value="std"'+(choice==="std"?' checked':'')+'/> Add standard</label><label><input type="radio" name="useC" value="custom"'+(choice==="custom"?' checked':'')+'/> Add custom instead</label></div>';
+  $("recs").innerHTML = h;
+  document.querySelectorAll('input[name=useC]').forEach(function(r){ r.addEventListener("change", function(){ choice = r.value; }); });
+  var ap = $("addPack"); if (ap) ap.addEventListener("click", function(){ addPack(ap.getAttribute("data-pack"), 1, v.ref); });
+  $("addLine").disabled = bad;
+}
+
+// Stack helper: fewest shims summing exactly to the gap (0.05 mm units)
+function bestStack(gap){
+  var units = Math.round(gap / 0.05); if (units <= 0) return null;
+  var ths = THK_STD.map(function(x){return x.t;}).filter(function(t){ return !onReq(t); });   // 0.05–3 mm incl. 0.9
+  var u = ths.map(function(t){ return Math.round(t/0.05); });
+  var INF = 1e9, best = new Array(units+1).fill(INF), from = new Array(units+1).fill(-1); best[0] = 0;
+  for (var a=1;a<=units;a++) for (var i=0;i<u.length;i++) if (u[i]<=a && best[a-u[i]]+1 < best[a]) { best[a] = best[a-u[i]]+1; from[a] = i; }
+  if (best[units] >= INF) return null;
+  var cnt = {}, a2 = units; while (a2 > 0) { var i2 = from[a2]; cnt[ths[i2]] = (cnt[ths[i2]]||0)+1; a2 -= u[i2]; }
+  return { total: units*0.05, n: best[units], counts: Object.keys(cnt).map(Number).sort(function(x,y){return y-x;}).map(function(t){ return {t:t, c:cnt[t]}; }) };
+}
+var STACK = null;
+function renderStack(){
+  var v = CUR ? CUR.v : readInputs();
+  $("resTitle").textContent = "Stack helper";
+  var gap = parseFloat($("gap").value), feet = Math.max(1, Math.round(parseFloat($("feet").value)||1));
+  STACK = (gap > 0) ? bestStack(gap) : null;
+  if (!STACK) { $("resCount").textContent = "Enter a gap"; $("resHint").textContent = ""; $("stackRes").innerHTML = ''; return; }
+  $("resCount").textContent = fmt(STACK.total)+" mm = "+STACK.n+" shim"+(STACK.n>1?"s":"")+" per foot";
+  $("resHint").textContent = "Size from Foot & bolt: "+fmt(v.L)+" x "+fmt(v.W)+" mm, C "+fmt(v.C)+" mm · "+feet+" feet";
+  var h = (Math.abs(STACK.total - gap) > 1e-9 ? '<div class="msg warn">Gap rounded to '+fmt(STACK.total)+' mm (0.05 mm steps).</div>' : '');
+  h += '<table class="spec"><thead><tr><th>Thickness</th><th>Per foot</th><th>Total ('+feet+' feet)</th><th>Packets</th></tr></thead><tbody>';
+  STACK.counts.forEach(function(x){ h += '<tr><td>'+fmt(x.t)+' mm'+'</td><td class="c">'+x.c+'</td><td class="c">'+(x.c*feet)+'</td><td class="c">'+packets(x.c*feet)+'</td></tr>'; });
+  h += '</tbody></table><p class="meta">Stack: '+STACK.counts.map(function(x){ return x.c+' × '+fmt(x.t)+' mm'; }).join(' + ')+' = '+fmt(STACK.total)+' mm.</p>';
+  $("stackRes").innerHTML = h;
+}
+function renderParts(){
+  $("resTitle").textContent = "Standard parts";
+  $("resCount").textContent = STD.length+" sizes × "+THK_STD.length+" thicknesses";
+  $("resHint").textContent = "Pre-cut stainless steel (SS), packet of 10. Part no. = size letter + thickness × 100.";
+  var h = '<span class="sort-label">Sorted smallest → largest (size, then thickness).</span><table class="spec"><thead><tr><th>Size</th><th>Letter</th><th>Slot</th><th>Slot depth</th>';
+  THK_STD.forEach(function(x){ h += '<th>'+fmt(x.t)+(onReq(x.t)?'*':'')+'</th>'; });
+  h += '</tr></thead><tbody>';
+  STD.forEach(function(s){ var sl = slotOf(s.letter);
+    h += '<tr><td>'+s.side+' x '+s.side+'</td><td class="c"><b>'+s.letter+'</b></td><td class="c">'+fmt(sl)+' mm'+(SLOT_OVR[s.letter]!=null?' (your override)':'')+'</td><td class="c">'+(DEPTH[s.letter]?DEPTH[s.letter]+' mm':'—')+'</td>';
+    THK_STD.forEach(function(x){ h += '<td class="c">'+(s.codes.indexOf(x.code)>=0 ? s.letter+x.code+(onReq(x.t)?'<br/><small>on request</small>':'') : '—')+'</td>'; });
+    h += '</tr>'; });
+  h += '</tbody></table><p class="meta">Slot widths from Yellotec QuoteWerks lines (same as the Budget Engineering price list and flyer). Slot depth (bottom edge to top of slot arc) from the Budget Engineering flyer. 0.9 mm (x090) is listed by Budget Engineering on its website and flyer. * 4.5 and 6 mm (also 8 and 10 mm) are on request: confirm availability and lead time with Yellotec. Each packet holds '+PACK+' shims in '+MATERIAL+'. '+esc(LEAD)+'</p>';
+  h += '<h3 style="font-size:0.9rem;margin:12px 0 4px">Shim packs (assortments)</h3><table class="spec"><thead><tr><th>Part no.</th><th>Pack size</th><th>Contents</th><th>Mass (kg)</th><th></th></tr></thead><tbody>';
+  PACKS.slice().sort(function(a,b){ return a.mass-b.mass; }).forEach(function(pk){ h += '<tr><td><b>'+esc(pk.part)+'</b></td><td>'+esc(packSizeTxt(pk))+'</td><td>10 pcs each of 0.05, 0.1, 0.25, 0.5 &amp; 1 mm (50 shims, stack 19 mm / 0.748 in)</td><td class="c">'+pk.mass+'</td><td><button type="button" class="btn ghost sm" data-addpack="'+pk.letter+'">Add</button></td></tr>'; });
+  h += '</tbody></table><p class="meta">Packs sorted by mass, smallest to largest. There is no pack for 250 x 250 (G).</p>';
+  var kh = '<table class="spec"><thead><tr><th>Kit</th><th>Shim sizes</th><th>Thicknesses (mm) × qty per size</th><th>Total shims</th></tr></thead><tbody>';
+  KITS.slice().sort(function(a,b){ return a.pcs-b.pcs || (a.code<b.code?-1:1); }).forEach(function(k){
+    kh += '<tr><td><b>'+esc(k.code)+'</b></td><td>'+esc(k.sizes.join(", "))+'</td><td>'+k.rows.map(function(rw){ return rw.t.map(fmt).join(", ")+' × '+rw.qty; }).join('; ')+'</td><td class="c">'+k.pcs+'</td></tr>'; });
+  kh += '</tbody></table><p class="meta">All 15 kits are Series 300 stainless steel in a hard Pelican™ case. Sorted by total shims, smallest first. Refill a kit with individual shim packets or packs. Source: Budget Engineering kit list. Ask Yellotec for a quote.</p>';
+  h += noteBox("kits", "Cased kits (Budget Engineering)", kh);
+  $("partsTable").innerHTML = h;
+  document.querySelectorAll("[data-addpack]").forEach(function(b){ b.addEventListener("click", function(){ addPack(b.getAttribute("data-addpack"), 1, ""); }); });
+}
+
+// ---------- Order list ----------
+function saveList(){ try { localStorage.setItem("yt-shim-list", JSON.stringify(LIST)); } catch(e) {} }
+function lineKey(it){ return it.type==="std" ? ("S|"+it.part+"|"+it.slot) : it.type==="pack" ? ("P|"+it.part) : ("C|"+it.L+"|"+it.W+"|"+it.C+"|"+it.T); }
+function addPack(letter, n, ref){ var pk = PACKS.find(function(x){ return x.letter===letter; }); if (!pk) return; LIST.push({ type:"pack", part:pk.part, letter:pk.letter, mass:pk.mass, qty:n, ref:ref }); saveList(); renderList(); }
+function addItem(v, st, q, useStd, ref){
+  var it = useStd && st && st.ok ? { type:"std", part:st.part, letter:st.letter, side:st.side, slot:st.slot, T:v.T, qty:q, ref:ref, needC:v.C }
+                                 : { type:"custom", L:v.L, W:v.W, C:v.C, D:v.D, T:v.T, qty:q, ref:ref };
+  LIST.push(it); saveList(); renderList();
+}
+function combined(){
+  var map = {}, order = [];
+  LIST.forEach(function(it){ var k = lineKey(it); if (!map[k]) { map[k] = Object.assign({}, it, {qty:0, refs:[]}); order.push(k); } map[k].qty += it.qty; if (it.ref) map[k].refs.push(it.ref); });
+  return order.map(function(k){ return map[k]; });
+}
+function itemLine(it){
+  if (it.type === "std") return stdLine({part:it.part, letter:it.letter, side:it.side, slot:(it.slot!=null?it.slot:slotOf(it.letter))}, {T:it.T}, it.qty);
+  if (it.type === "pack") { var pk = PACKS.find(function(x){ return x.part===it.part; }); return packLine(pk, it.qty); }
+  return customLine(it, it.qty);
+}
+function orderText(){ return LIST.length ? combined().map(itemLine).join("\n") + "\n" + LEAD : ""; }
+function renderList(){
+  if (!LIST.length) { $("listTable").innerHTML = '<p class="meta" style="margin-top:0">No lines yet. Use <b>Add to order list</b>.</p>'; $("orderOut").textContent = ""; updateCta(); return; }
+  var h = '<table class="spec"><thead><tr><th>#</th><th>Line</th><th>Qty</th><th></th></tr></thead><tbody>';
+  LIST.forEach(function(it, i){ var desc = it.type==="pack" ? ('<b>'+esc(it.part)+'</b> shim pack (50 shims)') : ((it.type==="std"?'<b>'+esc(it.part)+'</b> ':'<b>Custom</b> ')+esc(it.type==="std"?(it.side+" x "+it.side):(fmt(it.L)+" x "+fmt(it.W)+" x C"+fmt(it.C)))+', '+fmt(it.T)+' mm');
+    h += '<tr><td>'+(i+1)+'</td><td>'+desc+(it.ref?' · '+esc(it.ref):'')+'</td><td class="c">'+it.qty+(it.type==="pack"?' pack':'')+'</td><td><button type="button" class="btn ghost sm" data-del="'+i+'">Remove</button></td></tr>'; });
+  h += '</tbody></table><p class="meta" style="margin:0 0 4px">Combined order (identical lines merged, then shims rounded up to packets of '+PACK+'):</p>';
+  $("listTable").innerHTML = h;
+  document.querySelectorAll("[data-del]").forEach(function(b){ b.addEventListener("click", function(){ LIST.splice(+b.getAttribute("data-del"),1); saveList(); renderList(); }); });
+  $("orderOut").textContent = orderText(); updateCta();
+}
+function updateCta(){
+  var body = LIST.length ? ("Hi Yellotec,\n\nPlease quote the following shims:\n\n"+orderText()+"\n\nThanks") : "Hi Yellotec,\n\nPlease help with a shim order.\n";
+  $("cta").href = "mailto:sales@yellotec.com?subject="+encodeURIComponent("Shim order request")+"&body="+encodeURIComponent(body);
+}
+function copyText(t){
+  function done(){ $("copied").classList.add("show"); setTimeout(function(){ $("copied").classList.remove("show"); }, 1600); }
+  if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(t).then(done, fallback); } else fallback();
+  function fallback(){ var ta = document.createElement("textarea"); ta.value = t; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); done(); } catch(e) {} document.body.removeChild(ta); }
+}
+
+// ---------- Notes ----------
+function renderNotes(){
+  $("noteHow").innerHTML = noteBox("how", "How this works", 
+    "<b>Standard first:</b> the smallest standard square (50, 75, 100, 125, 150, 200, 250 mm) that is at least as big as both L and W is recommended, if the thickness has a standard part number and the standard slot fits C (where the slot is known). "+
+    "<b>C</b> is auto-suggested as the next whole mm above D + 2 mm. You can edit it, but it must stay more than 2 mm above D. Shims come in packets of "+PACK+": packets = shims needed ÷ 10, rounded up. "+
+    "Standard slot widths are built in (A 16, B 22, C 32, D 45, E 55, F 50, G 68 mm) and can be overridden. Shim size limits: 50–1000 mm for L and W. <b>Slot depth</b> (bottom edge to top of slot arc) uses the supplier value for standard sizes (A 39, B 55, C 77, D 95, F 109, E 148, G 184 mm); for other sizes it is scaled by L from the nearest standard size. The bolt centre defaults to slot depth − C/2 and can be typed in. The drawing is to scale for L, W, C, D and slot depth; the tab, corner radii and slot lead-in are indicative.");
+  var iss = '<table class="spec"><thead><tr><th>Part no.</th><th>Price-list description</th><th>Thickness in description</th><th>Thickness from code (used)</th></tr></thead><tbody>'+
+    ISSUES.map(function(i){ return '<tr><td>'+esc(i.part)+'</td><td>'+esc(i.desc)+'</td><td>'+esc(i.descT)+' mm</td><td><b>'+fmt(i.codeT)+' mm</b></td></tr>'; }).join('')+'</tbody></table>'+
+    '<p><b>E/F letters were reversed in the price list.</b> The price-list categories and descriptions list E005–E600 as 150 x 150 and F005–F600 as 200 x 200. Yellotec confirmed the QuoteWerks system is correct: <b>E = 200 x 200 (slot 55 mm)</b> and <b>F = 150 x 150 (slot 50 mm)</b>, and E-PAK / F-PAK follow the same letters. That means the "150x150" text in the E-line descriptions above belongs to the F parts (and vice versa). '+
+    'The price list gives no slot widths; they come from the QuoteWerks lines and match the Budget Engineering price list and flyer.</p>'+
+    '<p><b>Old price-list kit lines corrected by the Budget Engineering kit list:</b> "C 190" is 190 shims of 100 x 100 only (the old line said 720 pcs, 50–125). "BCD 360 L" is 360 shims of 75/100/125 (the old line said 600 pcs, 50/75/100). "CD 340" is 340 shims of 100/125: 0.05–1.0 mm × 20 plus 2.0 mm × 10 (the old line said 740 pcs, 50–125, with a stray "3.0 5"). "CD 400" is 400 shims of 100/125 (the old line said 360 pcs, 75–125). "F 175" in the old list does not exist; the 150 x 150 kit is "F 90". See <b>Cased kits</b> on the Standard parts tab.</p>'+
+    '<p><b>0.9 mm:</b> not in the price list or in the supplier spreadsheet, but listed on the Budget Engineering website (A090–G090) and flyer, so it is offered here.</p>';
+  var slots = '<p>Built-in widths come from the Yellotec QuoteWerks lines. Type a value to override it in this browser; clear the box to go back to the built-in value.</p><div class="form-grid">'+
+    STD.map(function(s){ var o = SLOT_OVR[s.letter]; return '<div class="fld"><label for="slot'+s.letter+'">'+s.letter+' · '+s.side+' x '+s.side+' slot <span>mm (built-in '+SLOTS[s.letter]+')</span></label><input id="slot'+s.letter+'" data-slot="'+s.letter+'" type="number" min="1" step="0.5" value="'+(o!=null?o:"")+'" placeholder="'+SLOTS[s.letter]+'"/></div>'; }).join('')+'</div>';
+  var packs = '<table class="spec"><thead><tr><th>Part no.</th><th>Line (as quoted)</th><th>Size</th></tr></thead><tbody>'+PACKS.map(function(pk){ return '<tr><td>'+esc(pk.part)+'</td><td>'+esc(packDesc(pk))+'</td><td>'+esc(packSizeTxt(pk))+'</td></tr>'; }).join('')+'</tbody></table>';
+  var oq = '<ul style="margin:0;padding-left:18px"><li>None blocking. Confirmed: E = 200 x 200 (slot 55), F = 150 x 150 (slot 50), packs A–F per letter, no G pack, custom size 50–1000 mm, custom in packets of 10, lead time 1–2 weeks (expedite available), Series 300 stainless steel only, 4.5 and 6 mm (and 8 / 10 mm) on request.</li><li>Tab size, corner radii and slot lead-in in the drawing are indicative only.</li></ul>';
+  $("notesBottom").innerHTML = noteBox("issues", "Price-list inconsistencies ("+ISSUES.length+" lines)", iss) + noteBox("slots", "Standard slot widths (edit)", slots) + noteBox("packs", "Shim packs (assortments)", packs) + noteBox("oq", "Open questions", oq);
+  document.querySelectorAll("[data-slot]").forEach(function(inp){ inp.addEventListener("change", function(){
+    var k = inp.getAttribute("data-slot"), val = parseFloat(inp.value);
+    if (isNaN(val)) delete SLOT_OVR[k]; else SLOT_OVR[k] = val;
+    try { localStorage.setItem(SLOT_KEY, JSON.stringify(SLOT_OVR)); } catch(e) {}
+    render();
+  }); });
+}
+
+// ---------- Wiring ----------
+THK_ALL.forEach(function(t){ var o = document.createElement("option"); o.value = t; o.textContent = fmt(t)+" mm"+(onReq(t)?" (on request)":""); $("inT").appendChild(o); });
+$("inT").value = "0.5";
+["inL","inW","inD","inS","inT","inQ","inRef"].forEach(function(id){ $(id).addEventListener("input", render); $(id).addEventListener("change", render); });
+$("inC").addEventListener("input", function(){ cTouched = $("inC").value !== ""; render(); });
+$("autoC").addEventListener("click", function(){ cTouched = false; render(); });
+["gap","feet"].forEach(function(id){ $(id).addEventListener("input", render); $(id).addEventListener("change", render); });
+$("addLine").addEventListener("click", function(){ if (!CUR || CUR.bad) return; addItem(CUR.v, CUR.st, CUR.v.Q, choice==="std", CUR.v.ref); });
+$("addStack").addEventListener("click", function(){
+  if (!STACK || !CUR || CUR.bad) return; var feet = Math.max(1, Math.round(parseFloat($("feet").value)||1));
+  STACK.counts.forEach(function(x){ var v = Object.assign({}, CUR.v, {T:x.t}); var st = standardFor(v); addItem(v, st, x.c*feet, st.ok, (CUR.v.ref||"Stack "+fmt(STACK.total)+" mm")); });
+});
+$("copyBtn").addEventListener("click", function(){ copyText(orderText() || ""); });
+$("clearBtn").addEventListener("click", function(){ LIST = []; saveList(); renderList(); });
+document.querySelectorAll(".tab").forEach(function(b){ b.addEventListener("click", function(){ tab = b.getAttribute("data-tab"); render(); }); });
+
+function render(){
+  document.querySelectorAll(".tab").forEach(function(b){ b.classList.toggle("is-on", b.getAttribute("data-tab")===tab); });
+  document.querySelectorAll(".view").forEach(function(v){ v.classList.toggle("is-on", v.getAttribute("data-view")===tab); });
+  renderBuild();
+  if (tab === "stack") renderStack(); else if (tab === "parts") renderParts();
+}
+// Test hooks: #L=50&W=50&D=12&T=0.5&qty=4&C=16&S=25&tab=build|stack|parts&gap=1.35&feet=4&demo=1
+(function applyHash(){
+  var h = new URLSearchParams(String(location.hash||"").replace(/^#/,""));
+  [["L","inL"],["W","inW"],["D","inD"],["S","inS"],["qty","inQ"],["gap","gap"],["feet","feet"],["ref","inRef"]].forEach(function(p){ if (h.get(p[0])) $(p[1]).value = h.get(p[0]); });
+  if (h.get("T")) $("inT").value = String(parseFloat(h.get("T")));
+  if (h.get("C")) { $("inC").value = h.get("C"); cTouched = true; }
+  if (h.get("tab") && ["build","stack","parts"].indexOf(h.get("tab"))>=0) tab = h.get("tab");
+  if (h.get("custom") === "1") choice = "custom";
+  if (h.get("demo") === "1") {
+    LIST = [];
+    render(); addItem(CUR.v, CUR.st, CUR.v.Q, CUR.st.ok, CUR.v.ref || "Motor feet");
+    var v2 = Object.assign({}, CUR.v, {T:0.1}); addItem(v2, standardFor(v2), 8, true, "Motor feet");
+    var v3 = {L:300, W:280, D:24, C:27, T:2}; addItem(v3, standardFor(v3), 12, false, "Gearbox base");
+    addPack("A", 1, "Alignment kit");
+  }
+})();
+renderNotes(); render(); renderList();
+</script>
+</body>
+</html>
