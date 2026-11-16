@@ -1,7 +1,7 @@
 /* Yellotec Selectors service worker.
    Lives at the site root so it can serve the hub AND the selector pages loaded in the hub's iframe.
    Bump VERSION on every deploy so the new precache rolls out and old caches are removed. */
-const VERSION = "yt-hub-v10-2026-11-16";
+const VERSION = "yt-hub-v11-2026-11-16";
 const CACHE = VERSION;
 const BASE = new URL("./", self.location).href;          // e.g. https://<user>.github.io/rdi-whats-new/
 const PRECACHE = [
@@ -13,6 +13,10 @@ const PRECACHE = [
   "fluke-cm/", "fluke-cm/index.html",
   "atten2/", "atten2/index.html",
   "shim-builder/", "shim-builder/index.html",
+  "training/", "training/index.html",
+  "training/vendor/leaflet/leaflet.js", "training/vendor/leaflet/leaflet.css",
+  "training/vendor/leaflet/images/layers.png", "training/vendor/leaflet/images/marker-icon.png",
+  "training/vendor/leaflet/images/marker-icon-2x.png", "training/vendor/leaflet/images/marker-shadow.png",
   "assets/yt-template.css",
   "assets/yellotec-logo-landscape-black.svg", "assets/yellotec-logo-landscape-white.svg",
   "assets/rdi-technologies-logo.svg", "assets/teledyne-flir-logo-horizontal.svg",
