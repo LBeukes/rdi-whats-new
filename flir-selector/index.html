@@ -156,6 +156,14 @@ table.spec tr:nth-child(even) td { background:#fcfcfc; }
 .fov-hidden { display:none !important; }
 .sort-label { display:inline-block; font-size:0.72rem; color:var(--black); background:var(--lt); border:1px solid var(--border); border-radius:4px; padding:3px 8px; margin:0 0 8px; }
 .fov-overlay .ov-row input[type="file"] { color:#FFFFFF; }
+.ref-row { display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center; margin:8px 0; font-size:0.8rem; }
+.ref-row > b { font-size:0.78rem; }
+.ref-chip { display:inline-flex; align-items:center; gap:5px; border:1px solid var(--border); border-radius:999px; padding:3px 10px; cursor:pointer; background:#FFFFFF; color:var(--black); }
+.ref-chip input { accent-color:#000000; margin:0; }
+.fov-overlay .ref-chip { background:#1a1a1a; color:#FFFFFF; border-color:#444; }
+.fov-overlay .ref-chip input { accent-color:#FFD100; }
+@media (max-width:700px) { .wrap, .wrap.two-col { grid-template-columns:minmax(0,1fr) !important; } .wrap > * { min-width:0; } .results-body { overflow-x:auto; } }
+.sort-reset { font-size:0.72rem; margin-left:6px; padding:2px 8px; border:1px solid var(--black); background:#FFFFFF; border-radius:4px; cursor:pointer; font-family:inherit; }
 @media (max-width:1000px) { .results-body, .app-list { max-height:none; } }
 </style>
 </head>
@@ -249,7 +257,10 @@ const TAG_MAP = {
 
 let tab = "recommend";
 let selectedWheel = null;
-let selectedApp = "panels";
+let selectedApp = null;      // null = All applications (default)
+let sortFocus = null;        // camera id picked to browse (re-sorts by similarity); null = none
+let sortBy = "default";      // "default" (smallest → largest) | "wheel" (relevance to segment) | "camera" (similar to sortFocus)
+let fovRefs = null;          // null = scene default scale references; else array of SCALE_REFS ids
 let compareIds = ["e86","e96","t860"];
 let fovCamId = "e96";
 let fovScene = "panel";
@@ -289,6 +300,265 @@ function netdMk(c){
 function notListedTag(c){
   return c.ytListed === false ? ' <span class="yt-notlisted">Not listed on yellotec.co.za, ask sales</span>' : '';
 }
+
+/* ---- Scale references (shared by the generic diagram and the photo overlay) ---- */
+function crPath(pts){
+  // closed Catmull-Rom spline through pts -> smooth cubic Bezier path
+  var n = pts.length, d = "M" + pts[0][0].toFixed(2) + " " + pts[0][1].toFixed(2);
+  for (var i = 0; i < n; i++) {
+    var p0 = pts[(i-1+n)%n], p1 = pts[i], p2 = pts[(i+1)%n], p3 = pts[(i+2)%n];
+    var c1x = p1[0] + (p2[0]-p0[0])/6, c1y = p1[1] + (p2[1]-p0[1])/6;
+    var c2x = p2[0] - (p3[0]-p1[0])/6, c2y = p2[1] - (p3[1]-p1[1])/6;
+    d += " C" + c1x.toFixed(2) + " " + c1y.toFixed(2) + " " + c2x.toFixed(2) + " " + c2y.toFixed(2) + " " + p2[0].toFixed(2) + " " + p2[1].toFixed(2);
+  }
+  return d + " Z";
+}
+function ellPath(cx, cy, rx, ry){ return "M"+(cx-rx)+" "+cy+" a"+rx+" "+ry+" 0 1 0 "+(2*rx)+" 0 a"+rx+" "+ry+" 0 1 0 "+(-2*rx)+" 0 Z"; }
+function rectPath(x, y, w, h, r){
+  r = Math.min(r||0, w/2, h/2);
+  if (!r) return "M"+x+" "+y+" h"+w+" v"+h+" h"+(-w)+" Z";
+  return "M"+(x+r)+" "+y+" H"+(x+w-r)+" Q"+(x+w)+" "+y+" "+(x+w)+" "+(y+r)+" V"+(y+h-r)+" Q"+(x+w)+" "+(y+h)+" "+(x+w-r)+" "+(y+h)+" H"+(x+r)+" Q"+x+" "+(y+h)+" "+x+" "+(y+h-r)+" V"+(y+r)+" Q"+x+" "+y+" "+(x+r)+" "+y+" Z";
+}
+function workerShapes(){
+  // Industrial worker line art, front view. Units: cm, x = 0..70, y = 0 (top of hard hat) .. 180 (soles).
+  // Dark body fill + yellow outline, white detail lines / reflective strips (reads on the black template and on photos).
+  var K = "#151515", Y = "#FFD100", Wt = "#FFFFFF";
+  function part(d){ return { d: d, fill: K, stroke: Y, sw: 1.2 }; }
+  function det(d, sw){ return { d: d, stroke: Wt, sw: sw || 0.9 }; }
+  function band(d){ return { d: d, fill: Wt }; }
+  return [
+    // arms (viewer's left holds the toolbox)
+    part("M20 41 L14.5 45 L12.8 70 L22.6 71.5 L24.2 52 Z"), part(rectPath(12.2, 67.5, 10.8, 5.2, 1.2)), part("M13.6 72.5 L12.8 96 L19.4 97 L22.2 72.5 Z"),
+    part("M60 41 L65.5 45 L67.2 70 L57.4 71.5 L55.8 52 Z"), part(rectPath(57, 67.5, 10.8, 5.2, 1.2)), part("M57.8 72.5 L60.6 95 L67.2 95 L66.4 72.5 Z"),
+    // legs + boots
+    part("M24 102 L39.6 102 L38.6 168 L26 168 Z"), part("M40.4 102 L56 102 L54 168 L41.4 168 Z"),
+    band(rectPath(25.1, 126.5, 13.9, 2.2, 0)), band(rectPath(25.3, 131.6, 13.6, 2.2, 0)),
+    band(rectPath(41.0, 126.5, 14.1, 2.2, 0)), band(rectPath(41.1, 131.6, 13.7, 2.2, 0)),
+    part("M25.5 167 L39 167 L39.6 180 L19.6 180 L19.6 177 Q19.8 172.6 25 172 Z"), part("M54.5 167 L41 167 L40.4 180 L60.4 180 L60.4 177 Q60.2 172.6 55 172 Z"),
+    det("M19.8 177.6 L39.4 177.6 M40.6 177.6 L60.2 177.6 M25.4 170 L38.8 170 M41.2 170 L54.6 170"),
+    // shirt, collar and tie-like placket
+    part("M20 41 Q40 35.5 60 41 L57 58 L56.2 100 L23.8 100 L23 58 Z"),
+    det("M33.6 36.6 L40 44.5 L46.4 36.6 M33.6 36.6 L36 41.8 M46.4 36.6 L44 41.8", 1),
+    { d: "M40 44.5 L38.4 48.5 L40 72 L41.6 48.5 Z", fill: Wt },
+    // hi-vis vest panels with reflective strips
+    part("M23.8 41.4 L34.6 39.6 L39 46 L39 99 L23.8 99 L23 58 Z"), part("M56.2 41.4 L45.4 39.6 L41 46 L41 99 L56.2 99 L57 58 Z"),
+    band(rectPath(28.6, 41, 3, 37.5, 0)), band(rectPath(48.4, 41, 3, 37.5, 0)),
+    band(rectPath(23.8, 78.5, 15.2, 3, 0)), band(rectPath(41, 78.5, 15.2, 3, 0)),
+    band(rectPath(23.8, 86, 15.2, 3, 0)), band(rectPath(41, 86, 15.2, 3, 0)),
+    // tool belt, pouches and tools
+    part(rectPath(23.2, 97.6, 33.6, 5, 0.8)), det(rectPath(37.9, 98.3, 4.2, 3.6, 0.5), 1),
+    det("M25 103 L23.6 93.5 M28.6 103 L30.4 94.5 M51.6 103 L50.4 94 M55.4 103 L56.8 92.6 M54.6 92.2 L59.2 93.4"),
+    part(rectPath(21.6, 101.8, 10.4, 13.6, 1.5)), part(rectPath(48, 101.8, 10.4, 13.6, 1.5)),
+    det("M21.8 106 L31.8 106 M48.2 106 L58.2 106"),
+    // neck, faceless head, ridged hard hat
+    part(rectPath(36.4, 31, 7.2, 6.5, 1)), part(ellPath(40, 23.5, 8.4, 10.2)),
+    part("M26.6 14.4 C26.6 4.6 32.6 0 40 0 C47.4 0 53.4 4.6 53.4 14.4 Z"), part(rectPath(22.6, 13.6, 34.8, 3, 1.4)),
+    det("M40 0.6 L40 13.8 M35 1.9 L33.9 13.8 M45 1.9 L46.1 13.8"),
+    // hands + toolbox carried in the viewer's-left hand
+    part(ellPath(16.2, 99.6, 3.6, 4)), part(ellPath(63.9, 98.4, 3.6, 4)),
+    { d: "M9.5 111 L9.5 104.6 Q16.2 98 22.9 104.6 L22.9 111", stroke: Y, sw: 1.4 },
+    part(rectPath(4, 110, 24.4, 16, 1.6)), det("M4.2 114.6 L28.2 114.6"), det(rectPath(14.6, 112.4, 3.2, 4, 0.4))
+  ];
+}
+function stickShapes(){
+  // The original FLIR-page stick figure (head, torso, legs, arms), units cm, 50.4 x 180.
+  var Y = "#FFD100";
+  return [
+    { d: ellPath(25.2, 21.6, 14.4, 14.4), fill: Y },
+    { d: rectPath(14.11, 39.6, 22.18, 68.4, 2), fill: Y },
+    { d: rectPath(14.11, 111.6, 8.06, 68.4, 0), fill: Y },
+    { d: rectPath(28.22, 111.6, 8.06, 68.4, 0), fill: Y },
+    { d: rectPath(1.01, 46.8, 11.09, 14.4, 1), fill: Y },
+    { d: rectPath(38.3, 46.8, 11.09, 14.4, 1), fill: Y }
+  ];
+}
+function pylonShapes(){
+  // Units: m, x = 0..9 (cross-arm span), y = 0 (top) .. 20 (ground). Lattice outline, stroked.
+  var legL = [[1.2,20],[3.3,12],[3.9,3],[4.5,0.4]];
+  function lx(y){ for (var i=0;i<legL.length-1;i++){ var a=legL[i], b=legL[i+1]; if (y<=a[1] && y>=b[1]) return a[0] + (b[0]-a[0])*(a[1]-y)/(a[1]-b[1]); } return 4.5; }
+  function rx(y){ return 9 - lx(y); }
+  var d = "";
+  function ln(x1,y1,x2,y2){ d += "M"+x1.toFixed(3)+" "+y1.toFixed(3)+" L"+x2.toFixed(3)+" "+y2.toFixed(3)+" "; }
+  for (var i=0;i<legL.length-1;i++){ ln(legL[i][0],legL[i][1],legL[i+1][0],legL[i+1][1]); ln(9-legL[i][0],legL[i][1],9-legL[i+1][0],legL[i+1][1]); }
+  var lv = [20,17.2,14.6,12.3,10.2,8.4,6.9,5.4,4.0,2.6];
+  for (var k=0;k<lv.length;k++){ ln(lx(lv[k]),lv[k],rx(lv[k]),lv[k]); if (k<lv.length-1){ ln(lx(lv[k]),lv[k],rx(lv[k+1]),lv[k+1]); ln(rx(lv[k]),lv[k],lx(lv[k+1]),lv[k+1]); } }
+  // cross-arms (lower, upper) and earth-wire peak
+  ln(0.2,8.4,8.8,8.4); ln(0.2,8.4,lx(10.2),10.2); ln(8.8,8.4,rx(10.2),10.2);
+  for (var x=0.9;x<lx(8.4);x+=0.9){ ln(x,8.4,x+0.45,8.4+(10.2-8.4)*((x+0.45-0.2)/(lx(10.2)-0.2))); }
+  for (var x2=8.1;x2>rx(8.4);x2-=0.9){ ln(x2,8.4,x2-0.45,8.4+(10.2-8.4)*((8.8-(x2-0.45))/(8.8-rx(10.2)))); }
+  ln(1.2,4.0,7.8,4.0); ln(1.2,4.0,lx(5.4),5.4); ln(7.8,4.0,rx(5.4),5.4);
+  ln(2.9,1.2,6.1,1.2); ln(2.9,1.2,lx(2.6),2.6); ln(6.1,1.2,rx(2.6),2.6);
+  // insulator strings
+  [[0.45,8.4],[8.55,8.4],[1.45,4.0],[7.55,4.0]].forEach(function(p){ ln(p[0],p[1],p[0],p[1]+1.4); });
+  var ins = "";
+  [[0.45,8.4],[8.55,8.4],[1.45,4.0],[7.55,4.0]].forEach(function(p){ for (var j=1;j<=4;j++) ins += ellPath(p[0], p[1]+j*0.3, 0.16, 0.07) + " "; });
+  return [
+    { d: d, stroke: "#FFFFFF", ovStroke: "#FFD100", sw: 1.1 },
+    { d: ins, fill: "#FFD100" },
+    { d: "M-0.6 20 L9.6 20", stroke: "#FFFFFF", ovStroke: "#FFD100", sw: 1.4 }
+  ];
+}
+function motorPumpShapes(){
+  // End-suction centrifugal pump set on a common baseplate, side view. Units: mm, x = 0..1500 (L), y = 0 (top of discharge flange) .. 600 (underside of feet). W = 500 mm (into the page).
+  var Y = "#FFD100", G = "#E6E6E6", O = "#FF7A00", K = "#111111";
+  var base = [
+    rectPath(10, 545, 1480, 36, 4),                       // common baseplate / skid
+    rectPath(30, 581, 90, 19, 2), rectPath(700, 581, 90, 19, 2), rectPath(1380, 581, 90, 19, 2)   // feet
+  ].join(" ");
+  var motor = [
+    rectPath(140, 526, 430, 19, 2),                       // motor feet
+    rectPath(40, 215, 78, 290, 16),                       // fan cowl (left end)
+    rectPath(110, 190, 492, 340, 30),                     // TEFC motor frame
+    rectPath(300, 136, 124, 56, 6)                        // terminal box
+  ].join(" ");
+  var pump = [
+    rectPath(598, 347, 52, 26, 3),                        // motor shaft (centre line y 360)
+    rectPath(800, 305, 220, 110, 10),                     // bearing housing / frame
+    rectPath(880, 413, 50, 133, 3),                       // bearing support foot
+    ellPath(1150, 360, 175, 175),                         // volute casing
+    rectPath(1070, 520, 160, 26, 3),                      // casing foot
+    rectPath(1170, 36, 80, 160, 4),                       // vertical discharge pipe
+    rectPath(1300, 320, 160, 80, 4)                       // suction nozzle
+  ].join(" ");
+  var flanges = [rectPath(1146, 0, 128, 36, 4), rectPath(1458, 282, 32, 156, 4)].join(" ");
+  var lines = "";
+  for (var y = 205; y <= 515; y += 20) lines += "M134 " + y + " L578 " + y + " ";               // cooling fins
+  for (var y2 = 232; y2 <= 492; y2 += 15) lines += "M50 " + y2 + " L108 " + y2 + " ";             // cowl grille
+  lines += "M300 162 L424 162 M820 360 L1000 360 M1020 330 L1020 390 ";
+  lines += "M1160 0 L1160 36 M1260 0 L1260 36 M1458 300 L1490 300 M1458 420 L1490 420 M10 563 L1490 563 ";
+  return [
+    { d: base, fill: G },
+    { d: motor, fill: Y },
+    { d: pump, fill: Y },
+    { d: flanges, fill: G },
+    { d: rectPath(630, 292, 170, 136, 8), fill: O },                                        // coupling guard (open)
+    { d: rectPath(668, 325, 94, 70, 4) + " M650 360 L812 360", stroke: K, sw: 1 },        // flexible coupling visible inside guard
+    { d: lines, stroke: K, sw: 0.9 },
+    { d: ellPath(1150, 360, 58, 58) + " " + ellPath(1150, 360, 12, 12), stroke: K, sw: 0.9 }
+  ];
+}
+function treeShapes(){
+  return [
+    { d: rectPath(0.88, 3.3, 0.34, 2.7, 0), fill: "#8B5A2B" },
+    { d: ellPath(1.05, 2.1, 1.0, 1.92), fill: "#2E7D32" },
+    { d: ellPath(1.05, 1.32, 0.8, 1.5), fill: "#43A047" }
+  ];
+}
+const SCALE_REFS = [
+  { id:"person", label:"Worker 1.8 m", short:"1.8 m worker", hM:1.8, wM:0.70, uw:70, uh:180, shapes: workerShapes() },
+  { id:"stick", label:"Stick figure 1.8 m", short:"1.8 m stick figure", hM:1.8, wM:0.504, uw:50.4, uh:180, shapes: stickShapes() },
+  { id:"motor", label:"Motor-pump set 1500 × 500 × 600 mm", short:"Motor-pump set 1500 × 500 × 600 mm", hM:0.6, wM:1.5, uw:1500, uh:600, shapes: motorPumpShapes() },
+  { id:"tree", label:"Tree ≈ 6 m", short:"≈6 m tree", hM:6, wM:2.1, uw:2.1, uh:6, shapes: treeShapes() },
+  { id:"pylon", label:"Power pylon 20 m", short:"20 m power pylon", hM:20, wM:9, uw:9, uh:20, shapes: pylonShapes() }
+];
+function refById(id){ return SCALE_REFS.find(function(r){ return r.id===id; }); }
+function refSvg(ref, x, yBottom, pxPerM){
+  // x = left edge (px), yBottom = ground (px)
+  var k = (ref.hM * pxPerM) / ref.uh, top = yBottom - ref.uh * k;
+  var g = '<g transform="translate('+x.toFixed(2)+' '+top.toFixed(2)+') scale('+k.toFixed(5)+')">';
+  ref.shapes.forEach(function(sh){
+    g += '<path d="'+sh.d+'" fill="'+(sh.fill||'none')+'"'+(sh.stroke?' stroke="'+sh.stroke+'" stroke-width="'+(sh.sw||1)+'" vector-effect="non-scaling-stroke" stroke-linecap="round"':'')+'/>';
+  });
+  return g + '</g>';
+}
+function refCanvas(ctx, ref, x, yBottom, pxPerM){
+  var k = (ref.hM * pxPerM) / ref.uh, top = yBottom - ref.uh * k;
+  ctx.save();
+  ctx.translate(x, top); ctx.scale(k, k);
+  ref.shapes.forEach(function(sh){
+    var p = new Path2D(sh.d);
+    if (sh.fill) {
+      ctx.fillStyle = sh.fill; ctx.fill(p);
+      ctx.lineWidth = 1.2 / k; ctx.strokeStyle = "rgba(0,0,0,0.75)"; ctx.stroke(p);   // dark edge so it reads on any photo
+    }
+    if (sh.stroke) {
+      ctx.lineWidth = 2.2 / k; ctx.strokeStyle = "rgba(0,0,0,0.8)"; ctx.lineCap = "round"; ctx.stroke(p);
+      ctx.lineWidth = (sh.sw||1) / k; ctx.strokeStyle = sh.ovStroke || sh.stroke; ctx.stroke(p);
+    }
+  });
+  ctx.restore();
+}
+function refChips(name, onIds){
+  return SCALE_REFS.map(function(r){
+    return '<label class="ref-chip"><input type="checkbox" data-'+name+'="'+r.id+'"'+(onIds.indexOf(r.id)>=0?' checked':'')+'/> '+esc(r.label)+'</label>';
+  }).join('');
+}
+
+/* ---- Sorting ---- */
+function isDisc(c){ return !!c.status && /discontinued|superseded/i.test(c.status); }
+function cmpSmallest(x, y){
+  var px = irPixels(x), py = irPixels(y);
+  if (px !== py) return px - py;
+  var nx = netdMk(x), ny = netdMk(y);
+  if (nx !== ny) return nx - ny;
+  return x.name.localeCompare(y.name);
+}
+function sortSmallest(list){ return list.slice().sort(cmpSmallest); }
+function wheelRank(c, wid){
+  var primary = c.wheel === wid ? 0 : 2;
+  return primary + (isDisc(c) ? 1 : 0);
+}
+function sortWheel(list, wid){
+  // Relevance to a wheel segment: cameras whose main category is the segment first, then cameras that also cover it;
+  // current models before discontinued in each group; inside a group the most capable first
+  // (highest IR resolution, then lowest NETD, then name).
+  return list.slice().sort(function(x, y){
+    var rx = wheelRank(x, wid), ry = wheelRank(y, wid);
+    if (rx !== ry) return rx - ry;
+    var px = irPixels(x), py = irPixels(y);
+    if (px === Infinity) px = -1; if (py === Infinity) py = -1;
+    if (px !== py) return py - px;
+    var nx = netdMk(x), ny = netdMk(y);
+    if (nx !== ny) return nx - ny;
+    return x.name.localeCompare(y.name);
+  });
+}
+function simDist(c, ref){
+  var pc = irPixels(c), pr = irPixels(ref);
+  var dRes;
+  if (pc === Infinity || pr === Infinity) dRes = (pc === pr) ? 0 : 9;
+  else dRes = Math.abs(Math.log(pc / pr));
+  var nc = netdMk(c), nr = netdMk(ref);
+  var dNetd = (nc === Infinity || nr === Infinity) ? (nc === nr ? 0 : 1) : Math.abs(nc - nr) / 100;
+  return dRes + dNetd;
+}
+function sortSimilar(list, refId){
+  // Closest comparable models to the picked camera: picked camera first, then same series,
+  // then the rest; inside each group by closeness in IR resolution (pixel-count ratio), NETD breaks ties.
+  var ref = camById(refId);
+  return list.slice().sort(function(x, y){
+    var gx = x.id === ref.id ? 0 : (x.category === ref.category ? 1 : 2);
+    var gy = y.id === ref.id ? 0 : (y.category === ref.category ? 1 : 2);
+    if (gx !== gy) return gx - gy;
+    var dx = simDist(x, ref), dy = simDist(y, ref);
+    if (dx !== dy) return dx - dy;
+    if (isDisc(x) !== isDisc(y)) return isDisc(x) ? 1 : -1;
+    return x.name.localeCompare(y.name);
+  });
+}
+function sortMode(forBrowse){
+  if (forBrowse && sortBy === "camera" && sortFocus) return "camera";
+  if (selectedWheel && (sortBy === "wheel" || sortBy === "camera")) return "wheel";
+  return "default";
+}
+function sortCams(list, forBrowse){
+  var m = sortMode(forBrowse);
+  if (m === "camera") return sortSimilar(list, sortFocus);
+  if (m === "wheel") return sortWheel(list, selectedWheel);
+  return sortSmallest(list);
+}
+function sortLabelHtml(forBrowse){
+  var m = sortMode(forBrowse), txt;
+  if (m === "camera") txt = 'Sorted by similarity to <b>'+esc(camById(sortFocus).name)+'</b>: picked camera first, then the same series, then closest IR resolution (pixel count); NETD breaks ties.';
+  else if (m === "wheel") { var w = WHEEL.find(function(x){ return x.id===selectedWheel; }); txt = 'Sorted by relevance to <b>'+esc(w ? w.label : selectedWheel)+'</b>: main category first, then cameras that also cover it; current before discontinued; most capable (highest IR resolution, lowest NETD) first in each group.'; }
+  else txt = 'Sorted smallest → largest by IR resolution (total pixels); NETD (lower first) breaks ties. Acoustic Si cameras (non-thermal) listed last.';
+  return '<span class="sort-label">'+txt+(m !== "default" ? ' <button type="button" class="sort-reset" data-sortreset="1">Sort smallest → largest</button>' : '')+'</span>';
+}
+document.addEventListener("click", function(e){
+  var b = e.target.closest ? e.target.closest("[data-sortreset]") : null;
+  if (!b) return;
+  sortBy = "default"; sortFocus = null; render();
+});
 
 function polar(cx,cy,r,deg) {
   const a = (deg - 90) * Math.PI / 180;
@@ -391,6 +661,10 @@ WHEEL.forEach(function(p,i){
 function selectWheel(id){
   if (selectedWheel === id) { clearWheel(); return; }
   selectedWheel = id;
+  // A wheel click shows every camera in that segment: switch the application filter to All
+  // (the user can still pick an application afterwards on purpose).
+  selectedApp = null; browseApp = "all";
+  sortBy = "wheel"; sortFocus = null;
   document.querySelectorAll(".seg").forEach(function(el){
     var on = el.getAttribute("data-id") === id;
     el.classList.toggle("is-selected", on);
@@ -406,12 +680,20 @@ function clearWheel(){
     el.classList.remove("is-selected"); el.style.transform="scale(1)";
   });
   document.getElementById("filterNote").textContent = "";
+  if (sortBy === "wheel") sortBy = "default";
   render();
 }
 document.getElementById("lensHub").addEventListener("click", clearWheel);
 document.getElementById("clearWheel").addEventListener("click", clearWheel);
 
 const appList = document.getElementById("appList");
+(function(){
+  var b = document.createElement("button");
+  b.type="button"; b.className="app-btn"; b.dataset.id="all";
+  b.textContent = "All applications";
+  b.addEventListener("click", function(){ selectedApp = null; render(); });
+  appList.appendChild(b);
+})();
 RECS.forEach(function(r){
   var b = document.createElement("button");
   b.type="button"; b.className="app-btn"; b.dataset.id=r.id;
@@ -444,12 +726,30 @@ function camCard(c, opts){
   return html;
 }
 
+function renderRecommendAll(){
+  var cams = sortCams(CAMERAS.filter(function(c){ return wheelMatch(c, selectedWheel); }), false);
+  var w = WHEEL.find(function(x){ return x.id===selectedWheel; });
+  document.getElementById("sinceCount").textContent = "All applications · " + cams.length + " camera" + (cams.length===1?"":"s") + (w ? " · " + w.label : "");
+  document.getElementById("sinceHint").textContent = w ? "Every camera related to " + w.label + ". Pick an application to get a best choice and runner-up." : "Pick an application for a best choice and runner-up, or click a wheel segment.";
+  document.getElementById("resultsTitle").textContent = "Results · Recommend";
+  var html = '';
+  if (selectedWheel === "fire") html += noteBox('fire-note', 'Fire fighting note', 'K-Series firefighter TICs (K1–K65) are listed here. G609 / GF309 are furnace see-through-flame cameras — different use case than structural firefighting.');
+  if (w && cams.length) html += camCard(cams[0], {cls:"best", tag:"Best match · " + w.label, why:(cams[0].typical||"")});
+  html += '<div class="card"><h3>'+(w ? 'All '+esc(w.label)+' cameras' : 'All cameras')+' ('+cams.length+')</h3>';
+  html += sortLabelHtml(false);
+  html += '<table class="spec"><thead><tr><th>Camera</th><th>Series</th><th>IR</th><th>NETD</th><th>Status</th></tr></thead><tbody>';
+  cams.forEach(function(c){
+    html += '<tr><td>'+esc(c.name)+notListedTag(c)+'</td><td>'+esc(c.category)+'</td><td>'+esc(c.ir)+'</td><td>'+esc(c.netd.split(";")[0])+'</td><td>'+esc(c.status||"Current")+'</td></tr>';
+  });
+  html += '</tbody></table></div>';
+  document.getElementById("results").innerHTML = html;
+}
 function renderRecommend(){
+  if (!selectedApp) { renderRecommendAll(); return; }
   var rec = RECS.find(function(r){ return r.id===selectedApp; }) || RECS[0];
-  if (!selectedApp) selectedApp = rec.id;
   var best = camById(rec.bestId);
   var runner = camById(rec.runnerId);
-  var suitable = rec.suitableIds.map(camById).filter(function(c){ return wheelMatch(c, selectedWheel); });
+  var suitable = sortCams(rec.suitableIds.map(camById).filter(function(c){ return wheelMatch(c, selectedWheel); }), false);
   var bestOk = wheelMatch(best, selectedWheel);
   var runnerOk = wheelMatch(runner, selectedWheel);
 
@@ -468,6 +768,7 @@ function renderRecommend(){
 
   html += '<div class="card"><h3>Others suitable ('+suitable.length+')</h3>';
   html += noteBox('lens-'+rec.id, 'Lens tip', esc(rec.lensTip));
+  html += sortLabelHtml(false);
   html += '<table class="spec"><thead><tr><th>Camera</th><th>Series</th><th>IR</th><th>NETD</th><th>Status</th></tr></thead><tbody>';
   suitable.forEach(function(c){
     html += '<tr><td>'+esc(c.name)+notListedTag(c)+'</td><td>'+esc(c.category)+'</td><td>'+esc(c.ir)+'</td><td>'+esc(c.netd.split(";")[0])+'</td><td>'+esc(c.status||"Current")+'</td></tr>';
@@ -478,24 +779,18 @@ function renderRecommend(){
 
 function browseCams(){
   var base = CAMERAS.filter(function(c){ return wheelMatch(c, selectedWheel); });
-  if (browseApp === "all") {
-    return base.slice().sort(function(x,y){
-      var px = irPixels(x), py = irPixels(y);
-      if (px !== py) return px - py;
-      var nx = netdMk(x), ny = netdMk(y);
-      if (nx !== ny) return nx - ny;
-      return x.name.localeCompare(y.name);
+  if (browseApp !== "all") {
+    var tag = TAG_MAP[browseApp];
+    var rec = RECS.find(function(r){ return r.id===browseApp; });
+    base = base.filter(function(c){
+      return (tag && c.apps.indexOf(tag) >= 0) || (rec && rec.suitableIds.indexOf(c.id) >= 0);
     });
   }
-  var tag = TAG_MAP[browseApp];
-  var rec = RECS.find(function(r){ return r.id===browseApp; });
-  return base.filter(function(c){
-    return (tag && c.apps.indexOf(tag) >= 0) || (rec && rec.suitableIds.indexOf(c.id) >= 0);
-  });
+  return sortCams(base, true);
 }
 function renderBrowse(){
   var cams = browseCams();
-  if (!cams.length) cams = CAMERAS.filter(function(c){ return wheelMatch(c, selectedWheel); });
+  if (!cams.length) cams = sortCams(CAMERAS.filter(function(c){ return wheelMatch(c, selectedWheel); }), true);
   if (!cams.some(function(c){ return c.id===browseId; })) browseId = cams[0] ? cams[0].id : "e96";
   var selected = camById(browseId);
   var appLabel = browseApp === "all" ? "All cameras" : ((RECS.find(function(r){return r.id===browseApp;})||{}).label || "");
@@ -505,7 +800,7 @@ function renderBrowse(){
   document.getElementById("resultsTitle").textContent = "Results · Browse";
 
   var html = '';
-  if (browseApp === "all") html += '<span class="sort-label">Sorted smallest → largest by IR resolution (total pixels); NETD (lower first) breaks ties. Acoustic Si cameras (non-thermal) listed last.'+(selectedWheel?' Wheel filter applied.':'')+'</span>';
+  html += sortLabelHtml(true);
   var opts = cams.map(function(c){ return '<option value="'+c.id+'"'+(c.id===browseId?' selected':'')+'>'+esc(c.name)+'</option>'; }).join("");
   html += '<div class="toolbar"><div><label for="browsePick">Detail card</label><select id="browsePick">'+opts+'</select></div></div>';
   html += '<table class="spec"><thead><tr><th>Camera</th><th>Series</th><th>IR</th><th>NETD</th><th>Temp</th><th>Lenses</th><th>Status</th></tr></thead><tbody>';
@@ -519,9 +814,9 @@ function renderBrowse(){
   vt += '</tbody></table>';
   html += noteBox('verify-table', 'Verify-before-quoting notes ('+VERIFY.length+')', vt);
   document.getElementById("results").innerHTML = html;
-  document.getElementById("browsePick").addEventListener("change", function(e){ browseId = e.target.value; render(); });
+  document.getElementById("browsePick").addEventListener("change", function(e){ browseId = e.target.value; sortFocus = browseId; sortBy = "camera"; render(); });
   document.querySelectorAll("table.spec tbody tr[data-id]").forEach(function(tr){
-    tr.addEventListener("click", function(){ browseId = tr.getAttribute("data-id"); render(); });
+    tr.addEventListener("click", function(){ browseId = tr.getAttribute("data-id"); sortFocus = browseId; sortBy = "camera"; render(); });
   });
 }
 
@@ -625,6 +920,7 @@ function renderFov(){
 
   html += '<div class="yt-seg" role="tablist" aria-label="FOV view"><button type="button" data-fovview="generic" class="'+(fovView==="generic"?"is-on":"")+'">Generic scale image</button><button type="button" data-fovview="upload" class="'+(fovView==="upload"?"is-on":"")+'">Upload your photo</button></div>';
   html += '<div id="fovGeneric" class="'+(fovView==="generic"?"":"fov-hidden")+'">';
+  html += '<div class="ref-row"><b>Scale references</b>'+refChips("fovref", activeRefs(scene).map(function(r){ return r.id; }))+'</div>';
   html += '<div class="fov-diagram">'+buildFovSvg(d, wH, wV, spot, mfov, scene, cam.name, lens)+'</div>';
 
   html += '<table class="spec"><thead><tr><th>Lens</th><th>FOV</th><th>IFOV</th><th>HFOV @ '+d+' m</th><th>VFOV</th><th>IFOV spot</th><th>MFOV ('+mfovFac+'×)</th></tr></thead><tbody>';
@@ -639,12 +935,12 @@ function renderFov(){
   html += '</tbody></table>';
   html += '</div>';
   if (cam.notes) html += noteBox('fovcam-'+cam.id, 'Verify note · '+cam.name, esc(cam.notes));
-  if (fovView==="generic") html += noteBox('scale-note', 'About the scale diagram', 'Yellow frame = FOV at '+d+' m on '+esc(cam.name)+' / '+esc(lens.label)+'. Human silhouette is 1.8 m tall; tree ≈ 6 m (shown when the application typically includes outdoor scale). Orange circle = <b>MFOV</b> (≈ '+mfovFac+' × IFOV) at true scale — the smallest target measured accurately. IFOV (1-pixel) is shown as a secondary readout. Acoustic cameras: coverage cone only — spot/MFOV is not meaningful.');
+  if (fovView==="generic") html += noteBox('scale-note', 'About the scale diagram', 'Yellow frame = FOV at '+d+' m on '+esc(cam.name)+' / '+esc(lens.label)+'. Scale references are drawn at true scale on the FOV floor line: worker 1.8 m (line art; the original stick figure is also available); tree ≈ 6 m; power pylon 20 m (lattice transmission tower outline, cross-arm span ≈ 9 m, indicative); motor-pump set (end-suction pump + motor on a common baseplate), side view L 1500 × H 600 mm (W 500 mm into the page). Worker (+ tree for outdoor applications) is the default; tick the chips to change. Orange circle = <b>MFOV</b> (≈ '+mfovFac+' × IFOV) at true scale — the smallest target measured accurately. IFOV (1-pixel) is shown as a secondary readout. Acoustic cameras: coverage cone only — spot/MFOV is not meaningful.');
 
   html += '<div class="fov-overlay'+(ovState.uiMode==="move"?" mode-move":"")+(fovView==="upload"?"":" fov-hidden")+'" id="fovOverlay">';
   html += '<div class="ov-fs-bar" id="ovFsBar"><span class="ov-fs-readout" id="ovFsReadout"></span><button type="button" id="ovFsExit">Exit full screen</button></div>';
   html += '<h3>Your photo · FOV / MFOV overlay</h3>';
-  html += '<div class="ov-hide-fs">'+noteBox('ov-help', 'How to use the photo overlay', 'Upload a site photo (stays in this browser — nothing is uploaded to a server). Draw a reference line on a known length (mm), then the yellow FOV frame and orange <b>MFOV</b> circle scale to that reference. Use <b>Move overlay</b> to drag the frame and MFOV independently (MFOV stays inside the FOV). Assumes the reference is flat-on to the camera.', true)+'</div>';
+  html += '<div class="ov-hide-fs">'+noteBox('ov-help', 'How to use the photo overlay', 'Upload a site photo (stays in this browser — nothing is uploaded to a server). Draw a reference line on a known length (mm), then the yellow FOV frame and orange <b>MFOV</b> circle scale to that reference. Use <b>Move overlay</b> to drag the frame and MFOV independently (MFOV stays inside the FOV). Tick <b>Scale figures</b> to place a 1.8 m worker or stick figure, 6 m tree, 20 m power pylon or 1500 × 500 × 600 mm motor-pump set at true scale; drag them in Move mode. Assumes the reference is flat-on to the camera.', true)+'</div>';
   html += '<div class="ov-row">';
   html += '<div class="ov-hide-fs"><label>Photo</label><input type="file" id="ovFile" accept="image/*"/></div>';
   html += '<div><label>Reference length (mm)</label><input type="number" id="ovLen" step="1" min="1" placeholder="1000" value="'+(ovState.lenMm||1000)+'"/></div>';
@@ -660,6 +956,7 @@ function renderFov(){
   html += '</div></div>';
   html += '<span class="mode-hint ov-hide-fs" id="ovModeHint"></span>';
   html += '</div>';
+  html += '<div class="ref-row ov-hide-fs"><b>Scale figures on photo</b>'+refChips("ovref", ovState.refs)+'<span class="mode-hint">True scale from your reference line · drag in Move mode</span></div>';
   html += '<p class="ov-status" id="ovStatus"></p>';
   html += '<div class="ov-stage" id="ovStage"><canvas id="ovCanvas" width="720" height="200"></canvas></div>';
   html += '<p class="ov-legend ov-hide-fs"><b>Yellow</b> = FOV frame (draggable in Move mode) · <b>Orange</b> = MFOV ⌀ at true scale (≈ '+mfovFac+' × IFOV; drag inside FOV) · Scale = line px ÷ (mm÷1000)</p>';
@@ -667,6 +964,20 @@ function renderFov(){
 
   document.getElementById("results").innerHTML = html;
   mountFovOverlay(d, wH, wV, spot, mfov, cam, lens);
+  document.querySelectorAll("[data-fovref]").forEach(function(cb){
+    cb.addEventListener("change", function(){
+      fovRefs = Array.prototype.slice.call(document.querySelectorAll("[data-fovref]")).filter(function(x){ return x.checked; }).map(function(x){ return x.getAttribute("data-fovref"); });
+      render();
+    });
+  });
+  document.querySelectorAll("[data-ovref]").forEach(function(cb){
+    cb.addEventListener("change", function(){
+      var id = cb.getAttribute("data-ovref");
+      ovState.refs = SCALE_REFS.map(function(r){ return r.id; }).filter(function(rid){ var el = document.querySelector('[data-ovref="'+rid+'"]'); return el && el.checked; });
+      if (!cb.checked) delete ovState.refPos[id];
+      ovRedrawFromArgs();
+    });
+  });
 
   document.getElementById("fovCam").addEventListener("change", function(e){ fovCamId = e.target.value; fovLensIdx = 0; render(); });
   document.getElementById("fovLens").addEventListener("change", function(e){ fovLensIdx = Number(e.target.value)||0; render(); });
@@ -698,7 +1009,9 @@ var ovState = {
   lastPtr: null,
   ptrId: null,
   fsFake: false,
-  drawArgs: null
+  drawArgs: null,
+  refs: [],          // SCALE_REFS ids shown on the photo
+  refPos: {}         // id -> {x: left, y: ground} in image px
 };
 
 function ovPxPerM(){
@@ -897,8 +1210,29 @@ function ovRecentreOverlay(){
   ovState.fovCy = ovState.natH ? ovState.natH / 2 : null;
   ovState.spotCx = ovState.fovCx;
   ovState.spotCy = ovState.fovCy;
+  ovState.refPos = {};
 }
 
+function ovRefLayout(fw, fh, ppm){
+  // default spot for each figure: standing on the bottom edge of the FOV frame, left part of the frame
+  var f = ovFovCentre();
+  var x = Math.max(f.x - fw/2, 0) + Math.max(8, Math.min(fw, ovState.natW) * 0.04);
+  var ground = Math.min(f.y + fh/2, ovState.natH * 0.95);
+  ovState.refs.forEach(function(id){
+    var r = refById(id); if (!r) return;
+    if (!ovState.refPos[id]) ovState.refPos[id] = { x: x, y: ground };
+    x += r.wM * ppm + Math.max(10, fw * 0.03);
+  });
+}
+function ovRefHit(p, ppm){
+  for (var i = ovState.refs.length - 1; i >= 0; i--) {
+    var id = ovState.refs[i], r = refById(id), pos = ovState.refPos[id];
+    if (!r || !pos) continue;
+    var w = r.wM * ppm, h = r.hM * ppm, pad = 8 / (p.fit ? p.fit.scale : 1);
+    if (p.x >= pos.x - pad && p.x <= pos.x + w + pad && p.y >= pos.y - h - pad && p.y <= pos.y + pad) return id;
+  }
+  return null;
+}
 function ovDraw(d, wH, wV, spot, mfov, cam, lens){
   ovState.drawArgs = { d:d, wH:wH, wV:wV, spot:spot, mfov:mfov, cam:cam, lens:lens };
   ovUpdateFsReadout(d, cam, lens);
@@ -974,6 +1308,17 @@ function ovDraw(d, wH, wV, spot, mfov, cam, lens){
     // light fill so frame is grabable visually
     ctx.fillStyle = "rgba(255,209,0,0.06)";
     ctx.fillRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
+    ovRefLayout(fw, fh, ppm);
+    ovState.refs.forEach(function(id, ri){
+      var r = refById(id), pos = ovState.refPos[id]; if (!r || !pos) return;
+      var o = toC(pos.x, pos.y);
+      refCanvas(ctx, r, o.x, o.y, ppm * fit.scale);
+      ctx.font = "bold 11px Arial,sans-serif";
+      var tw = ctx.measureText(r.short).width;
+      var ly = o.y + 3 + (ri % 2) * 17;
+      ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillRect(o.x - 2, ly, tw + 6, 15);
+      ctx.fillStyle = "#FFFFFF"; ctx.fillText(r.short, o.x + 1, ly + 11);
+    });
 
     var mfovR = (mfov * ppm * fit.scale) / 2;
     var ifovR = (spot * ppm * fit.scale) / 2;
@@ -1174,6 +1519,8 @@ function mountFovOverlay(d, wH, wV, spot, mfov, cam, lens){
     var mfovImgR = (mfov * ppm) / 2;
     var f = ovFovCentre();
     var s = ovSpotCentre();
+    var refHit = ovRefHit(p, ppm);
+    if (refHit) return "ref:" + refHit;
     var hitPad = Math.max(mfovImgR, 14 / (p.fit ? p.fit.scale : 1));
     var ds = Math.hypot(p.x - s.x, p.y - s.y);
     if (ds <= hitPad) return "spot";
@@ -1232,7 +1579,10 @@ function mountFovOverlay(d, wH, wV, spot, mfov, cam, lens){
     if (!ppm) return;
     var fw = wH * ppm, fh = wV * ppm;
     var mfovImgR = (mfov * ppm) / 2;
-    if (ovState.dragKind === "fov") {
+    if (ovState.dragKind && ovState.dragKind.indexOf("ref:") === 0) {
+      var rp = ovState.refPos[ovState.dragKind.slice(4)];
+      if (rp) { rp.x += dx; rp.y += dy; }
+    } else if (ovState.dragKind === "fov") {
       ovState.fovCx = (ovState.fovCx != null ? ovState.fovCx : ovState.natW/2) + dx;
       ovState.fovCy = (ovState.fovCy != null ? ovState.fovCy : ovState.natH/2) + dy;
       ovState.spotCx = (ovState.spotCx != null ? ovState.spotCx : ovState.fovCx) + dx;
@@ -1295,19 +1645,27 @@ function mountFovOverlay(d, wH, wV, spot, mfov, cam, lens){
 }
 
 
+function activeRefs(scene){
+  var ids = fovRefs ? fovRefs : (["person"].concat(scene.tree ? ["tree"] : []));
+  return SCALE_REFS.filter(function(r){ return ids.indexOf(r.id) >= 0; });
+}
 function buildFovSvg(d, wH, wV, spot, mfov, scene, camName, lens){
   var W = 720, H = 400;
   var padL = 70, padR = 40, padT = 36, padB = 50;
   var plotW = W - padL - padR, plotH = H - padT - padB;
-  var personH = 1.8, treeH = 6.0;
-  var needH = Math.max(wV, personH * 1.15, (scene.tree ? treeH : 0) * 1.05);
-  var needW = Math.max(wH, 2.5);
+  var refs = activeRefs(scene);
+  var maxRefH = refs.reduce(function(a, r){ return Math.max(a, r.hM); }, 0);
+  var sumRefW = refs.reduce(function(a, r){ return a + r.wM; }, 0);
+  var needH = Math.max(wV, maxRefH * 1.08);
+  var needW = Math.max(wH, sumRefW * 1.3 + 0.1);
   var scale = Math.min(plotW / needW, plotH / needH);
   var cx = padL + plotW/2;
   var rectW = wH * scale, rectH = wV * scale;
   var rx = cx - rectW/2;
-  var ry = padT + (plotH - rectH)/2;
-  var gY = ry + rectH;
+  // keep FOV frame and every scale reference inside the plot: content = max(frame, tallest reference), ground at its bottom
+  var contentH = Math.max(rectH, maxRefH * scale);
+  var gY = padT + (plotH - contentH)/2 + contentH;
+  var ry = gY - rectH;
 
   function escXml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 
@@ -1332,36 +1690,17 @@ function buildFovSvg(d, wH, wV, spot, mfov, scene, camName, lens){
   s.push('<polygon points="'+dimX.toFixed(1)+','+gY.toFixed(1)+' '+(dimX-4)+','+(gY-6)+' '+(dimX+4)+','+(gY-6)+'" fill="#FFD100"/>');
   s.push('<text x="'+(dimX-6).toFixed(1)+'" y="'+((ry+gY)/2).toFixed(1)+'" text-anchor="middle" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="11" font-weight="700" transform="rotate(-90 '+(dimX-6).toFixed(1)+' '+((ry+gY)/2).toFixed(1)+')">VFOV '+fmtM(wV)+' ('+lens.fovV+'°)</text>');
 
-  if (scene.person) {
-    var pH = personH * scale;
-    var pW = pH * 0.28;
-    var px = cx - rectW*0.22 - pW/2;
-    var py = gY - pH;
-    s.push('<g fill="#FFD100" opacity="0.95">');
-    s.push('<circle cx="'+(px+pW/2).toFixed(1)+'" cy="'+(py+pH*0.12).toFixed(1)+'" r="'+(pH*0.08).toFixed(1)+'"/>');
-    s.push('<rect x="'+(px+pW*0.28).toFixed(1)+'" y="'+(py+pH*0.22).toFixed(1)+'" width="'+(pW*0.44).toFixed(1)+'" height="'+(pH*0.38).toFixed(1)+'" rx="2"/>');
-    s.push('<rect x="'+(px+pW*0.28).toFixed(1)+'" y="'+(py+pH*0.62).toFixed(1)+'" width="'+(pW*0.16).toFixed(1)+'" height="'+(pH*0.38).toFixed(1)+'"/>');
-    s.push('<rect x="'+(px+pW*0.56).toFixed(1)+'" y="'+(py+pH*0.62).toFixed(1)+'" width="'+(pW*0.16).toFixed(1)+'" height="'+(pH*0.38).toFixed(1)+'"/>');
-    s.push('<rect x="'+(px+pW*0.02).toFixed(1)+'" y="'+(py+pH*0.26).toFixed(1)+'" width="'+(pW*0.22).toFixed(1)+'" height="'+(pH*0.08).toFixed(1)+'" rx="1"/>');
-    s.push('<rect x="'+(px+pW*0.76).toFixed(1)+'" y="'+(py+pH*0.26).toFixed(1)+'" width="'+(pW*0.22).toFixed(1)+'" height="'+(pH*0.08).toFixed(1)+'" rx="1"/>');
-    s.push('</g>');
-    s.push('<text x="'+(px+pW/2).toFixed(1)+'" y="'+(gY+14).toFixed(1)+'" text-anchor="middle" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="10">1.8 m person</text>');
-    if (pH > rectH * 0.98) {
-      s.push('<text x="'+(px+pW/2).toFixed(1)+'" y="'+(ry+14).toFixed(1)+'" text-anchor="middle" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="10">taller than VFOV</text>');
-    }
-  }
-
-  if (scene.tree) {
-    var tH = treeH * scale;
-    var tW = tH * 0.35;
-    var tx = cx + rectW*0.18;
-    var ty = gY - tH;
-    s.push('<g>');
-    s.push('<rect x="'+(tx+tW*0.42).toFixed(1)+'" y="'+(ty+tH*0.55).toFixed(1)+'" width="'+(tW*0.16).toFixed(1)+'" height="'+(tH*0.45).toFixed(1)+'" fill="#8B5A2B"/>');
-    s.push('<ellipse cx="'+(tx+tW/2).toFixed(1)+'" cy="'+(ty+tH*0.35).toFixed(1)+'" rx="'+(tW*0.48).toFixed(1)+'" ry="'+(tH*0.32).toFixed(1)+'" fill="#2E7D32"/>');
-    s.push('<ellipse cx="'+(tx+tW/2).toFixed(1)+'" cy="'+(ty+tH*0.22).toFixed(1)+'" rx="'+(tW*0.38).toFixed(1)+'" ry="'+(tH*0.25).toFixed(1)+'" fill="#43A047"/>');
-    s.push('</g>');
-    s.push('<text x="'+(tx+tW/2).toFixed(1)+'" y="'+(gY+14).toFixed(1)+'" text-anchor="middle" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="10">≈6 m tree</text>');
+  // Scale references at true scale, standing on the FOV floor line, in one row from the left part of the frame.
+  if (refs.length) {
+    var gapPx = 14, total = refs.reduce(function(a, r){ return a + r.wM * scale; }, 0) + gapPx * (refs.length - 1);
+    var xs = rx + Math.max(8, rectW * 0.08);
+    if (xs + total > rx + rectW - 4) xs = Math.max(padL + 4, cx - total / 2);
+    refs.forEach(function(r, i){
+      var w = r.wM * scale, tall = r.hM * scale > rectH * 0.98;
+      s.push(refSvg(r, xs, gY, scale));
+      s.push('<text x="'+(xs + w/2).toFixed(1)+'" y="'+(gY + 14 + (i % 2) * 12).toFixed(1)+'" text-anchor="middle" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="10">'+escXml(r.short + (tall ? ' (taller than VFOV)' : ''))+'</text>');
+      xs += w + gapPx;
+    });
   }
 
   // True-scale MFOV diameter (primary); IFOV shown as secondary label
@@ -1398,7 +1737,7 @@ function syncWheelDropdown(){
   var html = "";
   if (tab === "browse") {
     lab.textContent = "Application";
-    html += '<option value="all"'+(browseApp==="all"?" selected":"")+'>All cameras (sorted smallest → largest)</option>';
+    html += '<option value="all"'+(browseApp==="all"?" selected":"")+'>All applications</option>';
     RECS.forEach(function(r){ html += '<option value="'+r.id+'"'+(browseApp===r.id?" selected":"")+'>'+esc(r.label)+'</option>'; });
   } else {
     lab.textContent = "Application (sets typical distance)";
@@ -1416,7 +1755,7 @@ document.getElementById("appSelect").addEventListener("change", function(e){
 function render(
 ){
   document.querySelectorAll(".app-btn").forEach(function(b){
-    b.classList.toggle("is-on", b.dataset.id === selectedApp);
+    b.classList.toggle("is-on", selectedApp ? b.dataset.id === selectedApp : b.dataset.id === "all");
   });
   syncWheelDropdown();
   if (tab === "recommend") renderRecommend();
@@ -1432,9 +1771,12 @@ function render(
     tab = t;
     document.querySelectorAll(".tab").forEach(function(b){ b.classList.toggle("is-on", b.getAttribute("data-tab")===t); });
   }
-  if (h.get("app")) { if (tab==="browse") browseApp = h.get("app"); else if (tab==="fov" && SCENES[h.get("app")]) { fovScene = h.get("app"); fovDist = String(SCENES[fovScene].distance); } else selectedApp = h.get("app"); }
+  if (h.get("app") === "all") { selectedApp = null; browseApp = "all"; }
+  else if (h.get("app")) { if (tab==="browse") browseApp = h.get("app"); else if (tab==="fov" && SCENES[h.get("app")]) { fovScene = h.get("app"); fovDist = String(SCENES[fovScene].distance); } else selectedApp = h.get("app"); }
   if (h.get("view") === "upload" || h.get("view") === "generic") fovView = h.get("view");
   if (h.get("cam")) fovCamId = h.get("cam");
+  if (h.get("refs")) fovRefs = h.get("refs").split(",").filter(function(id){ return !!refById(id); });
+  if (h.get("wheel") && WHEEL.some(function(w){ return w.id===h.get("wheel"); })) setTimeout(function(){ selectWheel(h.get("wheel")); }, 0);
 })();
 render();
 

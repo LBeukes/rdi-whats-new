@@ -48,6 +48,12 @@ table.spec td.c { text-align:center; }
 .stack-res { font-size:0.86rem; margin-top:8px; }
 .stack-res b { color:var(--black); }
 @media (max-width:1000px) { .shim-wrap { grid-template-columns:minmax(0,1fr); } }
+.pack-banner { max-width:1280px; margin:12px auto 0; padding:0 18px; }
+.pack-banner div, .pack-inline { background:#000000; color:#FFFFFF; border-left:6px solid var(--yellow); border-radius:8px; padding:10px 14px; font-weight:700; font-size:0.92rem; }
+.pack-inline { font-size:0.82rem; padding:8px 12px; margin:0 0 10px; }
+.pick-grid { display:grid; grid-template-columns: minmax(0,1.4fr) minmax(0,1fr) minmax(0,0.7fr); gap:8px; }
+@media (max-width:560px){ .pick-grid { grid-template-columns:1fr 1fr; } }
+.pick-preview { white-space:pre-wrap; font-family:ui-monospace,Consolas,monospace; font-size:0.78rem; background:#F4F4F4; border-radius:6px; padding:8px; margin-top:8px; word-break:break-word; }
 </style>
 </head>
 <body>
@@ -69,6 +75,7 @@ table.spec td.c { text-align:center; }
   <button type="button" class="tab" data-tab="parts">Standard parts</button>
 </nav>
 
+<div class="pack-banner" role="note"><div>All shims are sold in packets of 10. No single shims are sold.</div></div>
 <main class="shim-wrap" id="mainWrap">
   <!-- Inputs -->
   <section class="panel">
@@ -122,8 +129,19 @@ table.spec td.c { text-align:center; }
       <div id="partsTable"></div>
     </div>
 
+    <div class="card" style="margin-top:6px" id="pickCard">
+      <h3>Quick add: standard shim or pack</h3>
+      <div class="pick-grid">
+        <div class="fld"><label for="pkSize">Size / pack</label><select id="pkSize"></select></div>
+        <div class="fld"><label for="pkT">Thickness <span>mm</span></label><select id="pkT"></select></div>
+        <div class="fld"><label for="pkQ">Packets <span>of 10</span></label><input id="pkQ" type="number" min="1" step="1" value="1" inputmode="numeric"/></div>
+      </div>
+      <div class="pick-preview" id="pkPreview"></div>
+      <div class="btn-row"><button type="button" class="btn" id="pkAdd">Add to order list</button></div>
+    </div>
     <div class="card" style="margin-top:6px">
       <h3>Order list <span class="copied" id="copied">Copied</span></h3>
+      <div class="pack-inline" role="note">All shims are sold in packets of 10. No single shims are sold.</div>
       <div id="listTable"></div>
       <div class="order-out" id="orderOut" aria-live="polite"></div>
       <div class="btn-row">
@@ -450,7 +468,7 @@ function renderList(){
   if (!LIST.length) { $("listTable").innerHTML = '<p class="meta" style="margin-top:0">No lines yet. Use <b>Add to order list</b>.</p>'; $("orderOut").textContent = ""; updateCta(); return; }
   var h = '<table class="spec"><thead><tr><th>#</th><th>Line</th><th>Qty</th><th></th></tr></thead><tbody>';
   LIST.forEach(function(it, i){ var desc = it.type==="pack" ? ('<b>'+esc(it.part)+'</b> shim pack (50 shims)') : ((it.type==="std"?'<b>'+esc(it.part)+'</b> ':'<b>Custom</b> ')+esc(it.type==="std"?(it.side+" x "+it.side):(fmt(it.L)+" x "+fmt(it.W)+" x C"+fmt(it.C)))+', '+fmt(it.T)+' mm');
-    h += '<tr><td>'+(i+1)+'</td><td>'+desc+(it.ref?' · '+esc(it.ref):'')+'</td><td class="c">'+it.qty+(it.type==="pack"?' pack':'')+'</td><td><button type="button" class="btn ghost sm" data-del="'+i+'">Remove</button></td></tr>'; });
+    h += '<tr><td>'+(i+1)+'</td><td>'+desc+(it.ref?' · '+esc(it.ref):'')+'</td><td class="c">'+(it.type==="pack" ? it.qty+' pack' : it.qty+' shims<br/><small>'+packets(it.qty)+' × packet of '+PACK+'</small>')+'</td><td><button type="button" class="btn ghost sm" data-del="'+i+'">Remove</button></td></tr>'; });
   h += '</tbody></table><p class="meta" style="margin:0 0 4px">Combined order (identical lines merged, then shims rounded up to packets of '+PACK+'):</p>';
   $("listTable").innerHTML = h;
   document.querySelectorAll("[data-del]").forEach(function(b){ b.addEventListener("click", function(){ LIST.splice(+b.getAttribute("data-del"),1); saveList(); renderList(); }); });
@@ -464,6 +482,35 @@ function copyText(t){
   function done(){ $("copied").classList.add("show"); setTimeout(function(){ $("copied").classList.remove("show"); }, 1600); }
   if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(t).then(done, fallback); } else fallback();
   function fallback(){ var ta = document.createElement("textarea"); ta.value = t; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); done(); } catch(e) {} document.body.removeChild(ta); }
+}
+
+// ---------- Quick picker (standard shims and packs) ----------
+function pickOptions(){
+  var h = '<optgroup label="Standard pre-cut shims">';
+  STD.forEach(function(s){ h += '<option value="S:'+s.letter+'">'+s.letter+' '+s.side+' x '+s.side+' · slot '+fmt(slotOf(s.letter))+'</option>'; });
+  h += '</optgroup><optgroup label="Shim packs (50 shims, 5 thicknesses)">';
+  PACKS.forEach(function(pk){ h += '<option value="P:'+pk.letter+'">'+esc(pk.part)+' · '+esc(packSizeTxt(pk))+'</option>'; });
+  h += '</optgroup>';
+  $("pkSize").innerHTML = h;
+  $("pkT").innerHTML = THK_STD.map(function(x){ return '<option value="'+x.t+'">'+fmt(x.t)+' mm'+(onReq(x.t)?' (on request)':'')+'</option>'; }).join('');
+  $("pkT").value = "0.5";
+}
+function pickItem(){
+  var v = $("pkSize").value, n = Math.max(1, Math.round(parseFloat($("pkQ").value) || 1));
+  if (v.indexOf("P:") === 0) { var pk = PACKS.find(function(x){ return x.letter === v.slice(2); }); return { type:"pack", part:pk.part, letter:pk.letter, mass:pk.mass, qty:n, ref:"" }; }
+  var s = STD.find(function(x){ return x.letter === v.slice(2); }), t = parseFloat($("pkT").value), code = thkCode(t);
+  return { type:"std", part:s.letter+code, letter:s.letter, side:s.side, slot:slotOf(s.letter), T:t, qty:n*PACK, ref:"" };
+}
+function renderPick(){
+  var it = pickItem();
+  $("pkT").disabled = it.type === "pack";
+  $("pkPreview").textContent = itemLine(it) + ((it.type==="std" && onReq(it.T)) ? "\n" + ONREQ_TXT : "");
+}
+function addPicked(){
+  var it = pickItem(), k = lineKey(it);
+  var hit = LIST.find(function(x){ return lineKey(x) === k; });
+  if (hit) hit.qty += it.qty; else LIST.push(it);
+  saveList(); renderList();
 }
 
 // ---------- Notes ----------
@@ -492,6 +539,9 @@ function renderNotes(){
 }
 
 // ---------- Wiring ----------
+pickOptions(); renderPick();
+["pkSize","pkT","pkQ"].forEach(function(id){ $(id).addEventListener("input", renderPick); $(id).addEventListener("change", renderPick); });
+$("pkAdd").addEventListener("click", addPicked);
 THK_ALL.forEach(function(t){ var o = document.createElement("option"); o.value = t; o.textContent = fmt(t)+" mm"+(onReq(t)?" (on request)":""); $("inT").appendChild(o); });
 $("inT").value = "0.5";
 ["inL","inW","inD","inS","inT","inQ","inRef"].forEach(function(id){ $(id).addEventListener("input", render); $(id).addEventListener("change", render); });
