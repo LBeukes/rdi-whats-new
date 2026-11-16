@@ -49,7 +49,10 @@ table.spec tr:nth-child(even) td { background:#fcfcfc; }
   background:#111; border:2px solid var(--black); border-radius:10px; padding:12px;
   margin:0 0 12px; overflow:hidden;
 }
-.fov-diagram svg { display:block; width:100%; height:auto; max-height:360px; }
+.fov-diagram svg { display:block; width:100%; height:auto; max-height:360px; touch-action:none; }
+.fov-diagram .fov-drag-root { cursor:grab; }
+.ref-chip.fov-recentre { font-family:inherit; font-size:inherit; font-weight:700; border-color:var(--black); }
+.fov-diagram svg.is-dragging, .fov-diagram svg.is-dragging .fov-drag-root { cursor:grabbing; }
 .fov-overlay {
   background:#111; border:2px solid var(--black); border-radius:10px; padding:12px; margin:12px 0;
 }
@@ -260,6 +263,7 @@ let selectedWheel = null;
 let selectedApp = null;      // null = All applications (default)
 let sortFocus = null;        // camera id picked to browse (re-sorts by similarity); null = none
 let sortBy = "default";      // "default" (smallest → largest) | "wheel" (relevance to segment) | "camera" (similar to sortFocus)
+let fovOffM = { x: 0, y: 0 };   // generic diagram: FOV frame offset from its default spot, in metres (true scale)
 let fovRefs = null;          // null = scene default scale references; else array of SCALE_REFS ids
 let compareIds = ["e86","e96","t860"];
 let fovCamId = "e96";
@@ -920,7 +924,7 @@ function renderFov(){
 
   html += '<div class="yt-seg" role="tablist" aria-label="FOV view"><button type="button" data-fovview="generic" class="'+(fovView==="generic"?"is-on":"")+'">Generic scale image</button><button type="button" data-fovview="upload" class="'+(fovView==="upload"?"is-on":"")+'">Upload your photo</button></div>';
   html += '<div id="fovGeneric" class="'+(fovView==="generic"?"":"fov-hidden")+'">';
-  html += '<div class="ref-row"><b>Scale references</b>'+refChips("fovref", activeRefs(scene).map(function(r){ return r.id; }))+'</div>';
+  html += '<div class="ref-row"><b>Scale references</b>'+refChips("fovref", activeRefs(scene).map(function(r){ return r.id; }))+'<button type="button" class="ref-chip fov-recentre" id="fovRecentre">Re-centre FOV</button><span class="mode-hint">Drag the yellow FOV frame (mouse or touch) to move it over the references</span></div>';
   html += '<div class="fov-diagram">'+buildFovSvg(d, wH, wV, spot, mfov, scene, cam.name, lens)+'</div>';
 
   html += '<table class="spec"><thead><tr><th>Lens</th><th>FOV</th><th>IFOV</th><th>HFOV @ '+d+' m</th><th>VFOV</th><th>IFOV spot</th><th>MFOV ('+mfovFac+'×)</th></tr></thead><tbody>';
@@ -964,6 +968,9 @@ function renderFov(){
 
   document.getElementById("results").innerHTML = html;
   mountFovOverlay(d, wH, wV, spot, mfov, cam, lens);
+  bindFovDiagramDrag();
+  var fovRc = document.getElementById("fovRecentre");
+  if (fovRc) fovRc.addEventListener("click", function(){ fovOffM = { x: 0, y: 0 }; render(); });
   document.querySelectorAll("[data-fovref]").forEach(function(cb){
     cb.addEventListener("change", function(){
       fovRefs = Array.prototype.slice.call(document.querySelectorAll("[data-fovref]")).filter(function(x){ return x.checked; }).map(function(x){ return x.getAttribute("data-fovref"); });
@@ -1649,6 +1656,35 @@ function activeRefs(scene){
   var ids = fovRefs ? fovRefs : (["person"].concat(scene.tree ? ["tree"] : []));
   return SCALE_REFS.filter(function(r){ return ids.indexOf(r.id) >= 0; });
 }
+function bindFovDiagramDrag(){
+  var svg = document.querySelector("#fovGeneric .fov-diagram svg"); if (!svg) return;
+  var root = svg.querySelector(".fov-drag-root"); if (!root) return;
+  var scale = parseFloat(root.getAttribute("data-scale")), lim = root.getAttribute("data-lim").split(",").map(parseFloat);
+  var dx = parseFloat(root.getAttribute("data-dx")), dy = parseFloat(root.getAttribute("data-dy"));
+  var drag = null;
+  function pt(e){ var m = svg.getScreenCTM(); if (!m) return { x: 0, y: 0 }; var p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; p = p.matrixTransform(m.inverse()); return { x: p.x, y: p.y }; }
+  function apply(){ root.querySelectorAll(".fov-move").forEach(function(g){ g.setAttribute("transform", "translate("+dx.toFixed(2)+" "+dy.toFixed(2)+")"); }); }
+  root.addEventListener("pointerdown", function(e){
+    if (e.button != null && e.button > 0) return;
+    var p = pt(e); drag = { id: e.pointerId, x: p.x, y: p.y, dx: dx, dy: dy };
+    try { svg.setPointerCapture(e.pointerId); } catch (err) {}
+    svg.classList.add("is-dragging"); e.preventDefault();
+  });
+  svg.addEventListener("pointermove", function(e){
+    if (!drag || e.pointerId !== drag.id) return;
+    var p = pt(e);
+    dx = Math.max(lim[0], Math.min(lim[1], drag.dx + p.x - drag.x));
+    dy = Math.max(lim[2], Math.min(lim[3], drag.dy + p.y - drag.y));
+    apply(); e.preventDefault();
+  });
+  function end(e){
+    if (!drag || (e && e.pointerId !== drag.id)) return;
+    drag = null; svg.classList.remove("is-dragging");
+    fovOffM = { x: dx / scale, y: dy / scale };
+    root.setAttribute("data-dx", dx.toFixed(2)); root.setAttribute("data-dy", dy.toFixed(2));
+  }
+  svg.addEventListener("pointerup", end); svg.addEventListener("pointercancel", end);
+}
 function buildFovSvg(d, wH, wV, spot, mfov, scene, camName, lens){
   var W = 720, H = 400;
   var padL = 70, padR = 40, padT = 36, padB = 50;
@@ -1666,6 +1702,12 @@ function buildFovSvg(d, wH, wV, spot, mfov, scene, camName, lens){
   var contentH = Math.max(rectH, maxRefH * scale);
   var gY = padT + (plotH - contentH)/2 + contentH;
   var ry = gY - rectH;
+  // draggable FOV frame: offset kept in metres so the true mm scale holds when distance / lens changes; clamped inside the plot
+  var dMinX = padL - rx, dMaxX = (padL + plotW) - (rx + rectW), dMinY = padT - ry, dMaxY = (padT + plotH) - gY;
+  if (dMinX > dMaxX) dMinX = dMaxX = 0;
+  if (dMinY > dMaxY) dMinY = dMaxY = 0;
+  var fdx = Math.max(dMinX, Math.min(dMaxX, fovOffM.x * scale)), fdy = Math.max(dMinY, Math.min(dMaxY, fovOffM.y * scale));
+  var fovG = '<g class="fov-move" transform="translate('+fdx.toFixed(2)+' '+fdy.toFixed(2)+')">';
 
   function escXml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 
@@ -1673,8 +1715,10 @@ function buildFovSvg(d, wH, wV, spot, mfov, scene, camName, lens){
   s.push('<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="FOV scale diagram">');
   s.push('<rect width="'+W+'" height="'+H+'" fill="#111"/>');
   s.push('<text x="'+padL+'" y="22" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="13" font-weight="700">'+escXml(camName)+' · '+escXml(lens.label)+' · d = '+d+' m</text>');
-  s.push('<rect x="'+rx.toFixed(1)+'" y="'+ry.toFixed(1)+'" width="'+rectW.toFixed(1)+'" height="'+rectH.toFixed(1)+'" fill="none" stroke="#FFD100" stroke-width="2.5"/>');
-  s.push('<line x1="'+rx.toFixed(1)+'" y1="'+gY.toFixed(1)+'" x2="'+(rx+rectW).toFixed(1)+'" y2="'+gY.toFixed(1)+'" stroke="#444" stroke-width="1"/>');
+  s.push('<line x1="'+padL+'" y1="'+gY.toFixed(1)+'" x2="'+(padL+plotW)+'" y2="'+gY.toFixed(1)+'" stroke="#444" stroke-width="1"/>');
+  s.push('<g class="fov-drag-root" data-scale="'+scale.toFixed(6)+'" data-lim="'+[dMinX,dMaxX,dMinY,dMaxY].map(function(v){ return v.toFixed(2); }).join(',')+'" data-dx="'+fdx.toFixed(2)+'" data-dy="'+fdy.toFixed(2)+'">');
+  s.push(fovG);
+  s.push('<rect class="fov-grab" x="'+rx.toFixed(1)+'" y="'+ry.toFixed(1)+'" width="'+rectW.toFixed(1)+'" height="'+rectH.toFixed(1)+'" fill="rgba(255,209,0,0.04)" stroke="#FFD100" stroke-width="2.5"/>');
 
   var dimY = ry - 10;
   if (dimY < 28) dimY = ry + 14;
@@ -1691,7 +1735,10 @@ function buildFovSvg(d, wH, wV, spot, mfov, scene, camName, lens){
   s.push('<text x="'+(dimX-6).toFixed(1)+'" y="'+((ry+gY)/2).toFixed(1)+'" text-anchor="middle" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="11" font-weight="700" transform="rotate(-90 '+(dimX-6).toFixed(1)+' '+((ry+gY)/2).toFixed(1)+')">VFOV '+fmtM(wV)+' ('+lens.fovV+'°)</text>');
 
   // Scale references at true scale, standing on the FOV floor line, in one row from the left part of the frame.
+  s.push('</g>');
+  var refsAt = s.length;
   if (refs.length) {
+    s.push('<g pointer-events="none">');
     var gapPx = 14, total = refs.reduce(function(a, r){ return a + r.wM * scale; }, 0) + gapPx * (refs.length - 1);
     var xs = rx + Math.max(8, rectW * 0.08);
     if (xs + total > rx + rectW - 4) xs = Math.max(padL + 4, cx - total / 2);
@@ -1701,7 +1748,13 @@ function buildFovSvg(d, wH, wV, spot, mfov, scene, camName, lens){
       s.push('<text x="'+(xs + w/2).toFixed(1)+'" y="'+(gY + 14 + (i % 2) * 12).toFixed(1)+'" text-anchor="middle" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="10">'+escXml(r.short + (tall ? ' (taller than VFOV)' : ''))+'</text>');
       xs += w + gapPx;
     });
+    s.push('</g>');
   }
+  // draw the scale references underneath the (draggable) FOV frame, spot and labels
+  var refPart = s.splice(refsAt, s.length - refsAt);
+  var rootAt = s.findIndex(function(x){ return x.indexOf('<g class="fov-drag-root"') === 0; });
+  Array.prototype.splice.apply(s, [rootAt, 0].concat(refPart));
+  s.push(fovG);
 
   // True-scale MFOV diameter (primary); IFOV shown as secondary label
   var mfovR = (mfov * scale) / 2;
@@ -1720,6 +1773,7 @@ function buildFovSvg(d, wH, wV, spot, mfov, scene, camName, lens){
   s.push('<text x="'+leadX.toFixed(1)+'" y="'+(leadY+4).toFixed(1)+'" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="11" font-weight="700">MFOV ⌀ '+fmtMm(mfov)+'</text>');
   s.push('<text x="'+leadX.toFixed(1)+'" y="'+(leadY+18).toFixed(1)+'" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="10">IFOV '+fmtMm(spot)+'</text>');
 
+  s.push('</g></g>');
   s.push('<text x="'+cx.toFixed(1)+'" y="'+(H-12).toFixed(1)+'" text-anchor="middle" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="11">DFOV '+fmtM(Math.sqrt(wH*wH+wV*wV))+' · scale: 1 m = '+scale.toFixed(1)+' px · yellow = FOV · orange = MFOV</text>');
   s.push('</svg>');
   return s.join('');

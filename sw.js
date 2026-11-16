@@ -1,7 +1,7 @@
 /* Yellotec Selectors service worker.
    Lives at the site root so it can serve the hub AND the selector pages loaded in the hub's iframe.
    Bump VERSION on every deploy so the new precache rolls out and old caches are removed. */
-const VERSION = "yt-hub-v9-2026-11-16";
+const VERSION = "yt-hub-v10-2026-11-16";
 const CACHE = VERSION;
 const BASE = new URL("./", self.location).href;          // e.g. https://<user>.github.io/rdi-whats-new/
 const PRECACHE = [
