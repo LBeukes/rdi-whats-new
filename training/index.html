@@ -141,6 +141,75 @@ table.spec tr.sel td { background:#fff6c2; }
   .wrap { padding:12px 10px 20px; }
   .wrap > *, .venue-grid > * { min-width:0; }
 }
+
+.vcp { background:#000; color:#fff; border-radius:14px; padding:22px 22px 18px; position:relative; overflow:hidden; font-family:Arial, Helvetica, sans-serif; }
+.vcp * { box-sizing:border-box; }
+.vcp::before { content:""; position:absolute; left:0; top:0; right:0; height:6px; background:#FFD100; }
+.vcp-head { display:flex; gap:14px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; }
+.vcp-kicker { color:#FFD100; font-size:0.74rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; margin:4px 0 4px; }
+.vcp h3 { color:#fff; font-size:1.5rem; line-height:1.15; margin:0 0 6px; }
+.vcp-lead { color:#fff; font-size:0.9rem; line-height:1.45; margin:0; max-width:760px; }
+.vcp-logo { height:34px; width:auto; background:#fff; border-radius:6px; padding:5px 8px; }
+.vcp-facts { display:grid; grid-template-columns:1fr 1fr 1.3fr; gap:10px; margin:16px 0 6px; }
+.vcp-fact { border:1.5px solid #3F3F3F; border-radius:10px; padding:10px 12px; background:#111; }
+.vcp-fact .n { font-size:1.55rem; font-weight:700; color:#FFD100; line-height:1.1; }
+.vcp-fact .t { font-size:0.78rem; color:#fff; line-height:1.35; margin-top:3px; }
+.vcp-fact.key { background:#FFD100; border-color:#FFD100; }
+.vcp-fact.key .n, .vcp-fact.key .t { color:#000; }
+.vcp-steps { list-style:none; margin:18px 0 6px; padding:0; display:grid; grid-template-columns:repeat(5, 1fr); gap:12px; position:relative; }
+.vcp-steps::before { content:""; position:absolute; left:8%; right:8%; top:22px; height:3px; background:#FFD100; z-index:0; }
+.vcp-step { position:relative; z-index:1; background:#111; border:1.5px solid #3F3F3F; border-radius:12px; padding:0 12px 12px; display:flex; flex-direction:column; align-items:flex-start; }
+.vcp-num { width:44px; height:44px; border-radius:50%; background:#FFD100; color:#000; font-weight:700; font-size:1.2rem; display:flex; align-items:center; justify-content:center; border:3px solid #000; box-shadow:0 0 0 2px #FFD100; margin:0 0 8px; align-self:center; }
+.vcp-ico { width:38px; height:38px; margin:0 0 6px; }
+.vcp-ico svg { width:38px; height:38px; display:block; }
+.vcp-step h4 { color:#fff; font-size:0.92rem; line-height:1.2; margin:0 0 6px; }
+.vcp-step p { color:#fff; font-size:0.78rem; line-height:1.4; margin:0; }
+.vcp-step .stage { color:#FFD100; font-size:0.66rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:3px; }
+.vcp-step.here { background:#FFD100; border-color:#FFD100; }
+.vcp-step.here h4, .vcp-step.here p, .vcp-step.here .stage { color:#000; }
+.vcp-step.here .vcp-num { background:#000; color:#FFD100; box-shadow:0 0 0 2px #000; border-color:#FFD100; }
+.vcp-here { display:inline-block; background:#000; color:#fff; font-size:0.66rem; font-weight:700; border-radius:999px; padding:3px 8px; margin-top:8px; }
+.vcp-must { display:block; margin-top:6px; font-weight:700; }
+.vcp-bottom { display:grid; grid-template-columns:1.25fr 1fr; gap:12px; margin-top:14px; }
+.vcp-advice { background:#fff; color:#000; border-radius:12px; padding:12px 14px; border:2px solid #FFD100; }
+.vcp-advice h4 { color:#000; margin:0 0 6px; font-size:0.95rem; }
+.vcp-advice ul { margin:0; padding:0; list-style:none; }
+.vcp-advice li { color:#000; font-size:0.8rem; line-height:1.4; padding:4px 0 4px 26px; position:relative; }
+.vcp-advice li::before { content:""; position:absolute; left:4px; top:7px; width:12px; height:12px; border-radius:50%; background:#FFD100; border:2px solid #000; }
+.vcp-note { border-left:4px solid #FFD100; padding:8px 12px; background:#111; border-radius:0 10px 10px 0; }
+.vcp-note p { color:#fff; font-size:0.82rem; line-height:1.45; margin:0 0 6px; }
+.vcp-note .sig { color:#FFD100; font-weight:700; font-size:0.78rem; margin:0; }
+.vcp-foot { color:#BDBDBD; font-size:0.68rem; margin:10px 0 0; line-height:1.4; }
+.vcp-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.vcp-actions .btn, .vcp-actions a { text-decoration:none; }
+.vcp-actions .vbtn { display:inline-block; background:#FFD100; color:#000; border:2px solid #FFD100; font-weight:700; font-size:0.82rem; border-radius:8px; padding:8px 12px; cursor:pointer; font-family:inherit; }
+.vcp-actions .vbtn.ghost { background:#000; color:#fff; border-color:#fff; }
+@media (max-width:1000px) {
+  .vcp-steps { grid-template-columns:1fr; gap:10px; }
+  .vcp-steps::before { left:21px; right:auto; top:10px; bottom:10px; width:3px; height:auto; }
+  .vcp-step { display:grid; grid-template-columns:44px 1fr; column-gap:12px; padding:12px; align-items:start; background:#111; }
+  .vcp-step .vcp-num { grid-row:1 / span 3; margin:0; align-self:start; }
+  .vcp-step .vcp-ico { display:none; }
+  .vcp-bottom { grid-template-columns:1fr; }
+}
+@media (max-width:700px) {
+  .vcp { padding:18px 14px 14px; }
+  .vcp h3 { font-size:1.25rem; }
+  .vcp-facts { grid-template-columns:1fr; }
+  .vcp-logo { display:none; }
+}
+
+#careerBody { margin-top:10px; }
+.career-wrap { max-width:1280px; margin:0 auto; padding:16px 18px 0; }
+.career-teaser { display:flex; align-items:center; gap:12px; flex-wrap:wrap; background:#000; color:#fff; border-radius:14px; padding:14px 16px; border-left:6px solid #FFD100; }
+.career-teaser .tt { flex:1; min-width:200px; }
+.career-teaser b { color:#fff; font-size:1rem; display:block; }
+.career-teaser span { color:#fff; font-size:0.8rem; }
+.career-teaser .k { color:#FFD100; font-size:0.7rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; display:block; margin-bottom:2px; }
+.career-teaser button, .career-close { background:#FFD100; color:#000; border:2px solid #FFD100; border-radius:8px; font-weight:700; font-size:0.82rem; padding:8px 12px; cursor:pointer; font-family:inherit; }
+.career-close { background:#000; color:#fff; border-color:#fff; }
+.vib-cp { display:flex; gap:10px; align-items:center; flex-wrap:wrap; background:#000; color:#fff; border-radius:10px; padding:10px 12px; margin:10px 0; border-left:5px solid #FFD100; font-size:0.8rem; }
+.vib-cp button { background:#FFD100; color:#000; border:0; border-radius:7px; font-weight:700; padding:6px 10px; cursor:pointer; font-family:inherit; }
 </style>
 </head>
 <body>
@@ -223,6 +292,16 @@ table.spec tr.sel td { background:#fff6c2; }
     <div class="results-body" id="results"></div>
   </section>
 </main>
+
+<section class="career-wrap" id="careerSec" aria-labelledby="careerTitle">
+  <div class="career-teaser" id="careerTeaser">
+    <div class="tt"><span class="k">Vibration analysis · read before you register</span><b id="careerTitle">Vibration analyst career path: the realistic five-stage roadmap</b><span>Field experience first, Cat I course at stage 4, 6 months+ documented experience for ISO certification.</span></div>
+    <button type="button" id="careerOpen" aria-expanded="false" aria-controls="careerBody">Show the career path</button>
+  </div>
+  <div id="careerBody" hidden>
+    <div class="vcp" id="vcpCard"><div class="vcp-head"><div><p class="vcp-kicker">Thinking of vibration analysis?</p><h3>Vibration analyst career path</h3><p class="vcp-lead">Vibration analysis is a niche, highly technical field. Field experience matters far more than any 5-day course, and the course on its own will not guarantee anyone a job. This is the realistic five-stage path.</p></div></div><div class="vcp-facts"><div class="vcp-fact"><div class="n">&lt; ~3,000</div><div class="t">qualified Category I vibration analysts in South Africa</div></div><div class="vcp-fact"><div class="n">40,000&ndash;60,000</div><div class="t">estimated skilled / semi-skilled fibre and network technicians*, for comparison</div></div><div class="vcp-fact key"><div class="n">6 months+</div><div class="t">documented relevant field experience required before ISO Category I certification</div></div></div><ol class="vcp-steps"><li class="vcp-step"><div class="vcp-num">1</div><div class="vcp-ico" style="color:#FFD100"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 32h32"/><path d="M11 32v-4a13 13 0 0 1 26 0v4"/><path d="M20 15v9M28 15v9"/><path d="M6 36h36"/></svg></div><div><div class="stage">Stage 1</div><h4>Industrial Maintenance &amp; Safety</h4><p>Start in an entry-level assistant, learner or apprentice role. Learn industrial environments, machinery components, and essential safety protocols and behaviours.</p></div></li><li class="vcp-step"><div class="vcp-num">2</div><div class="vcp-ico" style="color:#FFD100"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="26" width="18" height="14" rx="2"/><path d="M15 26v-6"/><rect x="12" y="14" width="6" height="6" rx="1"/><path d="M26 18h3l2-6 3 12 3-9 2 3h3"/></svg></div><div><div class="stage">Stage 2</div><h4>Supervised Data Collection</h4><p>Hands-on data collection with vibration data acquisition devices and sensors on machinery, under the supervision of a qualified analyst, so the data is accurate, repeatable, reliable and high-confidence.</p></div></li><li class="vcp-step"><div class="vcp-num">3</div><div class="vcp-ico" style="color:#FFD100"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="9" width="36" height="24" rx="2"/><path d="M18 40h12M24 33v7"/><path d="M11 28V23M16 28V16M21 28v-7M26 28V14M31 28v-4M36 28v-9"/></svg></div><div><div class="stage">Stage 3</div><h4>Internal Practical Training</h4><p>Formal in-house training on the employer&#39;s specific diagnostic hardware and software tools, practices and methodologies.</p></div></li><li class="vcp-step here"><div class="vcp-num">4</div><div class="vcp-ico" style="color:#000"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="8" width="30" height="24" rx="2"/><path d="M12 15h18M12 21h12"/><circle cx="34" cy="31" r="6"/><path d="M31 36l-2 7 5-3 5 3-2-7"/></svg></div><div><div class="stage">Stage 4</div><h4>ISO 18436-2 Category I Certification</h4><p>The 5-day certification course formalises your existing field experience and knowledge. <span class="vcp-must">A minimum of 6 months of documented relevant experience is mandatory for official ISO certification.</span> The course alone will not certify you. It is not a &ldquo;quick fix&rdquo; or &ldquo;get rich quick&rdquo; career move.</p><span class="vcp-here">Yellotec Cat I course sits here</span></div></li><li class="vcp-step"><div class="vcp-num">5</div><div class="vcp-ico" style="color:#FFD100"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 40h8v-8h8v-8h8v-8h8V8"/><path d="M32 8h6v6"/></svg></div><div><div class="stage">Stage 5</div><h4>Advanced Professional Growth (Cat II&ndash;IV)</h4><p>Each category beyond Cat I is increasingly difficult. Cat III and IV need a strong STEM (science, technology, engineering, mathematics) tertiary qualification or years of dedicated, disciplined self-study of the engineering physics involved.</p></div></li></ol><div class="vcp-bottom"><div class="vcp-advice"><h4>Practical advice before you register</h4><ul><li>Start with the many free self-study resources online before paying for a formal course: build a baseline and test your interest without the financial risk.</li><li>Look for assistant, learnership or apprenticeship roles to gain machine experience and show employers your initiative and work ethic.</li><li>Yellotec private course fees are paid on registration and are non-refundable.</li></ul></div><div class="vcp-note"><p>&ldquo;We do not view training as a profit-making endeavour. Our goal is honesty and transparency in the profession, so that people entering the field have the right foundation to succeed. We are not trying to discourage you, only to help you make an informed decision and avoid a costly miscalculation.&rdquo;</p><p class="sig">Yellotec Training</p></div></div><div class="vcp-actions"><button type="button" class="vbtn" data-career="va1">Open ISO Cat I Vibration Analyst course</button><a class="vbtn ghost" href="https://yellotec.co.za/training/iso-category-i-vibration-analyst-basic/" target="_blank" rel="noopener">Cat I course information (yellotec.co.za)</a><button type="button" class="vbtn ghost" data-career="close">Hide</button></div><p class="vcp-foot">*Comparison figures as quoted by Yellotec. Source: Yellotec&#39;s reply to vibration-training inquiries following a viral social-media video. www.yellotec.co.za &middot; training@yellotec.com</p></div>
+  </div>
+</section>
 
 <main class="wrap bottom" id="bottomWrap">
   <section class="panel detail" id="detailPanel">
@@ -391,6 +470,24 @@ function labelPos(i){ const mid=(i+0.5)*(360/N)+OFF; return polar(CX,CY,R*0.64,m
   document.getElementById("lensHub").addEventListener("click", function(){ selectDisc(null); });
   document.getElementById("clearWheel").addEventListener("click", function(){ selectDisc(null); });
 })();
+// ---- Vibration analyst career path (auto-opens when vibration is selected) ----
+var careerOpen = false, careerUser = null;   // careerUser: null = automatic, true/false = user choice
+function setCareer(open, scroll){
+  careerOpen = open;
+  document.getElementById("careerBody").hidden = !open;
+  var b = document.getElementById("careerOpen");
+  b.textContent = open ? "Hide the career path" : "Show the career path"; b.setAttribute("aria-expanded", open ? "true" : "false");
+  if (scroll) document.getElementById("careerSec").scrollIntoView({behavior:"smooth", block:"start"});
+}
+function vibContext(){ var c = selCourse ? courseById(selCourse) : null; return selDisc === "vib" || !!(c && c.disc === "vib"); }
+function autoCareer(){ if (careerUser === null) { var want = vibContext(); if (want !== careerOpen) setCareer(want, false); } }
+document.getElementById("careerOpen").addEventListener("click", function(){ careerUser = !careerOpen; setCareer(careerUser, false); });
+document.getElementById("careerBody").addEventListener("click", function(e){
+  var t = e.target.closest("[data-career]"); if (!t) return;
+  var a = t.getAttribute("data-career");
+  if (a === "va1") openCourse("va1", null, true);
+  else if (a === "close") { careerUser = false; setCareer(false, true); }
+});
 function selectDisc(id){
   selDisc = id;
   document.querySelectorAll(".seg").forEach(function(s){ var on = s.getAttribute("data-id")===id; s.classList.toggle("is-selected", on); s.style.transform = on ? "scale(1.035)" : "scale(1)"; });
@@ -518,6 +615,7 @@ function renderDetail(){
   h += '<div class="stats"><div class="stat"><div class="k">Duration</div><div class="v">'+esc(daysTxt(c))+'</div></div>'+
        '<div class="stat"><div class="k">Next session'+(selLoc!=="all"?" ("+esc(selLoc)+")":"")+'</div><div class="v">'+(ns ? (st.k==="prog" ? "In progress" : "in "+st.n+" day"+(st.n===1?"":"s")) : "Ask Yellotec")+'</div></div>'+
        '<div class="stat"><div class="k">Upcoming sessions</div><div class="v">'+up.length+'</div></div></div>';
+  if (c.disc === "vib") h += '<div class="vib-cp"><span style="flex:1;min-width:180px"><b style="color:#FFD100">New to vibration analysis?</b> Field experience comes first: Cat I sits at stage 4 of 5, and ISO certification needs 6 months+ documented experience.</span><button type="button" id="toCareer">See the career path</button></div>';
   h += '<p>'+esc(c.summary)+'</p><p class="meta" style="font-size:0.76rem;color:#6B6B6B">Format: '+esc(c.format)+'</p>';
   h += '<h4>Scheduled sessions'+(selLoc!=="all"?" · "+esc(locName(selLoc)):"")+'</h4>';
   if (up.length) {
@@ -537,6 +635,7 @@ function renderDetail(){
   h += '<button type="button" class="btn" id="toRequest" style="margin-top:4px">Use this course in the training request</button>';
   el.innerHTML = h;
   el.querySelectorAll("[data-pick]").forEach(function(btn){ btn.onclick = function(){ selSession = btn.getAttribute("data-pick"); syncRequest(true); renderDetail(); document.getElementById("reqPanel").scrollIntoView({behavior:"smooth", block:"start"}); }; });
+  var tc = document.getElementById("toCareer"); if (tc) tc.onclick = function(){ careerUser = true; setCareer(true, true); };
   document.getElementById("toRequest").onclick = function(){ syncRequest(true); document.getElementById("reqPanel").scrollIntoView({behavior:"smooth", block:"start"}); };
 }
 function openCourse(id, sessId, scroll){
@@ -686,6 +785,7 @@ document.getElementById("reqCopy").addEventListener("click", function(){
 
 // ---------- render ----------
 function render(){
+  autoCareer();
   var list = sorted(filtered());
   var up = 0; list.forEach(function(c){ up += courseSessions(c, false).length; });
   document.getElementById("count").textContent = list.length + " course" + (list.length===1?"":"s") + " · " + up + " upcoming session" + (up===1?"":"s");
@@ -722,6 +822,7 @@ function render(){
   var v = h.get("venue"); setVenue(["jhb","kzn","site","any"].indexOf(v)>=0 ? v : "any", false);
   if (h.get("disc") && discById(h.get("disc"))) selectDisc(h.get("disc")); else render();
   if (h.get("pin")) { var p = h.get("pin").split(",").map(parseFloat); if (p.length===2) setSite(p[0], p[1], null); }
+  if (h.get("career") === "1") { careerUser = true; setCareer(true, false); }
   syncRequest(true);
 })();
 </script>
