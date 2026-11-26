@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>Yellotec Product Selectors</title>
-<meta name="description" content="Yellotec product selectors for RDI Technologies, Teledyne FLIR, Fluke Reliability and Atten2."/>
+<title>RDI Iris software — Yellotec</title>
+<meta name="description" content="Explore what's new in RDI Technologies Iris software since your version."/>
 <meta name="theme-color" content="#000000"/>
 <link rel="manifest" href="manifest.webmanifest"/>
 <link rel="icon" type="image/svg+xml" href="icons/favicon.svg"/>
@@ -13,10 +13,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
-<meta name="apple-mobile-web-app-title" content="Yellotec"/>
+<meta name="apple-mobile-web-app-title" content="RDI Iris"/>
 <link rel="stylesheet" href="../assets/yt-template.css"/>
 <style>
-/* Hub shell. Palette per TEMPLATE.md: #FFD100 yellow, #FF6600 orange, black, white, greys. Arial. No blue.
+/* Hub shell. Palette: #FFD100 yellow, #FF6600 orange, black, white, greys. Arial. No blue.
    Dark backgrounds carry white text; yellow/orange are accents only (or buttons with black text). */
 :root { --yellow:#FFD100; --orange:#FF6600; --black:#000000; --white:#FFFFFF; --lt:#F2F2F2; --border:#E4E4E4; --soft:#6B6B6B; --charcoal:#3F3F3F; --side:264px; }
 * { box-sizing:border-box; }
@@ -93,11 +93,11 @@ body { font-family:Arial, Helvetica, sans-serif; background:var(--white); color:
     <img src="../assets/yellotec-logo-landscape-white.svg" alt="Yellotec"/>
     <div class="mcur" id="mcur"></div>
   </div>
-  <aside class="side" id="side" aria-label="Product selectors">
+  <aside class="side" id="side" aria-label="RDI selector">
     <button type="button" class="side-close" id="sideClose" aria-label="Close menu">×</button>
     <div class="side-head">
       <img src="../assets/yellotec-logo-landscape-white.svg" alt="Yellotec"/>
-      <p><b>Product Selectors</b> · choose a partner brand</p>
+      <p><b>RDI Technologies</b> · Iris software: what's new</p>
     </div>
     <ul class="brands" id="brands" role="tablist" aria-orientation="vertical"></ul>
     <div class="side-foot">
@@ -116,19 +116,14 @@ body { font-family:Arial, Helvetica, sans-serif; background:var(--white); color:
       <a class="open" id="openFull" href="#" target="_blank" rel="noopener">Open full page ↗</a>
     </div>
     <div class="frame-wrap">
-      <iframe id="frame" title="Product selector" src="about:blank"></iframe>
+      <iframe id="frame" title="RDI Iris software" src="about:blank"></iframe>
       <div class="loading" id="loading">Loading…</div>
     </div>
   </section>
 </div>
 <script>
 var BRANDS = [
-  { id:"rdi",    name:"RDI Technologies",  desc:"Iris software: what's new by version and product", path:"../index.html",          logo:"../assets/rdi-technologies-logo.svg",       alt:"RDI Technologies" },
-  { id:"flir",   name:"Teledyne FLIR",     desc:"Thermal camera selector and field-of-view tool",    path:"../flir-selector/index.html", logo:"../assets/teledyne-flir-logo-horizontal.svg", alt:"Teledyne FLIR" },
-  { id:"fluke",  name:"Fluke Reliability", desc:"Vibration and laser alignment selector",            path:"../fluke-cm/index.html",   logo:"../assets/fluke-logo.svg",                 alt:"Fluke" },
-  { id:"atten2", name:"Atten2",            desc:"Online and portable oil condition sensors",          path:"../atten2/index.html",     logo:"../assets/atten2-logo.svg",                alt:"Atten2" },
-  { id:"training", name:"Yellotec Training", desc:"All Yellotec courses: takeaways, certification, schedule, venue map and request", path:"../training/index.html", logo:"icons/favicon.svg", alt:"Yellotec Training" },
-  { id:"shim",   name:"Custom Shim Builder", desc:"Slotted SS shims: standard part no. or custom, packets of 10", path:"../shim-builder/index.html", logo:"icons/favicon.svg", alt:"Yellotec shims" }
+  { id:"rdi", name:"RDI Technologies", desc:"Iris software: what's new by version and product", path:"../index.html", logo:"../assets/rdi-technologies-logo.svg", alt:"RDI Technologies" }
 ];
 var KEY = "yt-hub-brand";
 var current = null;
@@ -165,7 +160,7 @@ function select(id, push){
   try { localStorage.setItem(KEY, b.id); } catch(e) {}
   var want = "#brand=" + b.id;
   if (location.hash !== want) { if (push) history.pushState(null, "", want); else history.replaceState(null, "", want); }
-  document.title = b.name + " · Yellotec Product Selectors";
+  document.title = b.name + " · Yellotec";
 }
 frame.addEventListener("load", function(){
   document.getElementById("loading").classList.remove("show");

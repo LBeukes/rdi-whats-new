@@ -1,7 +1,7 @@
 {
-  "name": "Yellotec Selectors",
-  "short_name": "Yellotec",
-  "description": "Yellotec product selectors: RDI Technologies, Teledyne FLIR, Fluke Reliability and Atten2.",
+  "name": "RDI Iris — Yellotec",
+  "short_name": "RDI Iris",
+  "description": "Explore what's new in RDI Technologies Iris software since your version.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
